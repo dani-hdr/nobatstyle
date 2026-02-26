@@ -1,35 +1,25 @@
+version: '3.8'
+
 services:
   payload:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     ports:
       - '3000:3000'
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-payload}
     depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
+      - postgres
+    restart: always
 
   postgres:
-    image: postgres:16-alpine
-    ports:
-      - '5432:5432'
+    image: postgres:18
+    restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-payload}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: payload
+      POSTGRES_USER: payload
+      POSTGRES_PASSWORD: password
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-payload}']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
+  postgres_data:

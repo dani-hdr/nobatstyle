@@ -69,6 +69,17 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    cities: City;
+    barbers: Barber;
+    services: Service;
+    appointments: Appointment;
+    reviews: Review;
+    availabilityExceptions: AvailabilityException;
+    portfolio: Portfolio;
+    conversations: Conversation;
+    messages: Message;
+    notifications: Notification;
+    subscriptionPlans: SubscriptionPlan;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +89,17 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    cities: CitiesSelect<false> | CitiesSelect<true>;
+    barbers: BarbersSelect<false> | BarbersSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
+    appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
+    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
+    availabilityExceptions: AvailabilityExceptionsSelect<false> | AvailabilityExceptionsSelect<true>;
+    portfolio: PortfolioSelect<false> | PortfolioSelect<true>;
+    conversations: ConversationsSelect<false> | ConversationsSelect<true>;
+    messages: MessagesSelect<false> | MessagesSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    subscriptionPlans: SubscriptionPlansSelect<false> | SubscriptionPlansSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -87,8 +109,14 @@ export interface Config {
     defaultIDType: string;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    settings: Setting;
+    home: Home;
+  };
+  globalsSelect: {
+    settings: SettingsSelect<false> | SettingsSelect<true>;
+    home: HomeSelect<false> | HomeSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -123,8 +151,17 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
-  updatedAt: string;
+  name: string;
+  role: 'customer' | 'barber' | 'admin';
+  phone?: string | null;
+  avatar?: (string | null) | Media;
+  /**
+   * کاربر تأیید شده است
+   */
+  isVerified?: boolean | null;
+  activeBarber?: (string | null) | Barber;
   createdAt: string;
+  updatedAt: string;
   email: string;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
@@ -163,6 +200,246 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "barbers".
+ */
+export interface Barber {
+  id: string;
+  user?: (string | null) | User;
+  shopName: string;
+  /**
+   * شناسه یکتا برای آدرس پروفایل
+   */
+  shopSlug?: string | null;
+  city: string | City;
+  address?: string | null;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  location?: [number, number] | null;
+  about?: string | null;
+  phone?: string | null;
+  avatar?: (string | null) | Media;
+  cover?: (string | null) | Media;
+  experienceYears?: number | null;
+  isVerified?: boolean | null;
+  isActive?: boolean | null;
+  /**
+   * نمایش در بخش «آرایشگران ویژه» صفحه اصلی
+   */
+  isFeatured?: boolean | null;
+  rating?: number | null;
+  reviewCount?: number | null;
+  /**
+   * ساعات کاری تکراری هفتگی. هر روز شامل جهت ساعات کاری است.
+   */
+  workingHours?:
+    | {
+        day: 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
+        enabled?: boolean | null;
+        slots?:
+          | {
+              start: string;
+              end: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities".
+ */
+export interface City {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: string;
+  name: string;
+  description?: string | null;
+  barber?: (string | null) | Barber;
+  price: number;
+  /**
+   * مدت زمان به دقیقه
+   */
+  duration: number;
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments".
+ */
+export interface Appointment {
+  id: string;
+  barber: string | Barber;
+  customer: string | User;
+  service?: (string | null) | Service;
+  /**
+   * عکس فوری از نام خدمت در زمان رزرو
+   */
+  serviceName?: string | null;
+  /**
+   * عکس فوری از قیمت در زمان رزرو
+   */
+  price?: number | null;
+  /**
+   * مدت به دقیقه
+   */
+  duration?: number | null;
+  date: string;
+  /**
+   * ساعت شروع، e.g. 18:30
+   */
+  startTime: string;
+  endTime?: string | null;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  note?: string | null;
+  cancelReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews".
+ */
+export interface Review {
+  id: string;
+  barber: string | Barber;
+  customer: string | User;
+  appointment?: (string | null) | Appointment;
+  rating: number;
+  comment?: string | null;
+  status: 'pending' | 'active' | 'rejected';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "availabilityExceptions".
+ */
+export interface AvailabilityException {
+  id: string;
+  barber: string | Barber;
+  label?: string | null;
+  date: string;
+  allDay?: boolean | null;
+  slots?:
+    | {
+        start: string;
+        end: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "portfolio".
+ */
+export interface Portfolio {
+  id: string;
+  title: string;
+  barber: string | Barber;
+  image: string | Media;
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversations".
+ */
+export interface Conversation {
+  id: string;
+  participants: (string | User)[];
+  barber?: (string | null) | Barber;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages".
+ */
+export interface Message {
+  id: string;
+  conversation: string | Conversation;
+  sender: string | User;
+  content: string;
+  readAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: string;
+  user: string | User;
+  type: 'appointment' | 'message' | 'system' | 'subscription';
+  title?: string | null;
+  body?: string | null;
+  readAt?: string | null;
+  /**
+   * داده اضافی ساختاریافته برای هدایت کاربر
+   */
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptionPlans".
+ */
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  durationMonths: number;
+  features?:
+    | {
+        feature?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -192,6 +469,50 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: string | Media;
+      } | null)
+    | ({
+        relationTo: 'cities';
+        value: string | City;
+      } | null)
+    | ({
+        relationTo: 'barbers';
+        value: string | Barber;
+      } | null)
+    | ({
+        relationTo: 'services';
+        value: string | Service;
+      } | null)
+    | ({
+        relationTo: 'appointments';
+        value: string | Appointment;
+      } | null)
+    | ({
+        relationTo: 'reviews';
+        value: string | Review;
+      } | null)
+    | ({
+        relationTo: 'availabilityExceptions';
+        value: string | AvailabilityException;
+      } | null)
+    | ({
+        relationTo: 'portfolio';
+        value: string | Portfolio;
+      } | null)
+    | ({
+        relationTo: 'conversations';
+        value: string | Conversation;
+      } | null)
+    | ({
+        relationTo: 'messages';
+        value: string | Message;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: string | Notification;
+      } | null)
+    | ({
+        relationTo: 'subscriptionPlans';
+        value: string | SubscriptionPlan;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -240,8 +561,14 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  updatedAt?: T;
+  name?: T;
+  role?: T;
+  phone?: T;
+  avatar?: T;
+  isVerified?: T;
+  activeBarber?: T;
   createdAt?: T;
+  updatedAt?: T;
   email?: T;
   resetPasswordToken?: T;
   resetPasswordExpiration?: T;
@@ -274,6 +601,193 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities_select".
+ */
+export interface CitiesSelect<T extends boolean = true> {
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "barbers_select".
+ */
+export interface BarbersSelect<T extends boolean = true> {
+  user?: T;
+  shopName?: T;
+  shopSlug?: T;
+  city?: T;
+  address?: T;
+  location?: T;
+  about?: T;
+  phone?: T;
+  avatar?: T;
+  cover?: T;
+  experienceYears?: T;
+  isVerified?: T;
+  isActive?: T;
+  isFeatured?: T;
+  rating?: T;
+  reviewCount?: T;
+  workingHours?:
+    | T
+    | {
+        day?: T;
+        enabled?: T;
+        slots?:
+          | T
+          | {
+              start?: T;
+              end?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services_select".
+ */
+export interface ServicesSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  barber?: T;
+  price?: T;
+  duration?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments_select".
+ */
+export interface AppointmentsSelect<T extends boolean = true> {
+  barber?: T;
+  customer?: T;
+  service?: T;
+  serviceName?: T;
+  price?: T;
+  duration?: T;
+  date?: T;
+  startTime?: T;
+  endTime?: T;
+  status?: T;
+  note?: T;
+  cancelReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews_select".
+ */
+export interface ReviewsSelect<T extends boolean = true> {
+  barber?: T;
+  customer?: T;
+  appointment?: T;
+  rating?: T;
+  comment?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "availabilityExceptions_select".
+ */
+export interface AvailabilityExceptionsSelect<T extends boolean = true> {
+  barber?: T;
+  label?: T;
+  date?: T;
+  allDay?: T;
+  slots?:
+    | T
+    | {
+        start?: T;
+        end?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "portfolio_select".
+ */
+export interface PortfolioSelect<T extends boolean = true> {
+  title?: T;
+  barber?: T;
+  image?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversations_select".
+ */
+export interface ConversationsSelect<T extends boolean = true> {
+  participants?: T;
+  barber?: T;
+  lastMessage?: T;
+  lastMessageAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages_select".
+ */
+export interface MessagesSelect<T extends boolean = true> {
+  conversation?: T;
+  sender?: T;
+  content?: T;
+  readAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  user?: T;
+  type?: T;
+  title?: T;
+  body?: T;
+  readAt?: T;
+  data?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptionPlans_select".
+ */
+export interface SubscriptionPlansSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  price?: T;
+  durationMonths?: T;
+  features?:
+    | T
+    | {
+        feature?: T;
+        id?: T;
+      };
+  isActive?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -314,6 +828,134 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface Setting {
+  id: string;
+  general?: {
+    siteName?: string | null;
+    supportPhone?: string | null;
+    supportEmail?: string | null;
+    timezone?: string | null;
+  };
+  booking?: {
+    /**
+     * گام زمانی اسلات‌ها (دقیقه)
+     */
+    slotStepMinutes?: number | null;
+    /**
+     * حداقل زمان قبل از شروع رزرو برای لغو بدون جریمه
+     */
+    cancellationWindowMinutes?: number | null;
+    /**
+     * حداکثر فاصله روز برای رزرو
+     */
+    maxBookingHorizonDays?: number | null;
+    defaultStatus?: ('pending' | 'confirmed') | null;
+  };
+  auth?: {
+    registrationEnabled?: boolean | null;
+    otpEnabled?: boolean | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home".
+ */
+export interface Home {
+  id: string;
+  hero?: {
+    title?: string | null;
+    subtitle?: string | null;
+    image?: (string | null) | Media;
+  };
+  stats?: {
+    barbersCount?: number | null;
+    appointmentsCount?: number | null;
+    citiesCount?: number | null;
+    customersCount?: number | null;
+  };
+  promo?: {
+    title?: string | null;
+    body?: string | null;
+    image?: (string | null) | Media;
+    link?: string | null;
+  };
+  /**
+   * خدمات منتخب جهت نمایش در بخش محبوب
+   */
+  popularServices?: (string | Service)[] | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  general?:
+    | T
+    | {
+        siteName?: T;
+        supportPhone?: T;
+        supportEmail?: T;
+        timezone?: T;
+      };
+  booking?:
+    | T
+    | {
+        slotStepMinutes?: T;
+        cancellationWindowMinutes?: T;
+        maxBookingHorizonDays?: T;
+        defaultStatus?: T;
+      };
+  auth?:
+    | T
+    | {
+        registrationEnabled?: T;
+        otpEnabled?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home_select".
+ */
+export interface HomeSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        title?: T;
+        subtitle?: T;
+        image?: T;
+      };
+  stats?:
+    | T
+    | {
+        barbersCount?: T;
+        appointmentsCount?: T;
+        citiesCount?: T;
+        customersCount?: T;
+      };
+  promo?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        image?: T;
+        link?: T;
+      };
+  popularServices?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

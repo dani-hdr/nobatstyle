@@ -4,6 +4,10 @@ import { isAdmin } from '../access'
 
 export const Services: CollectionConfig = {
   slug: 'services',
+  labels: {
+    singular: 'خدمت',
+    plural: 'خدمات',
+  },
   admin: {
     useAsTitle: 'name',
     group: 'خدمات',
@@ -55,6 +59,7 @@ export const Services: CollectionConfig = {
       relationTo: 'barbers',
       required: true,
       index: true,
+      label: 'آرایشگر',
       admin: {
         position: 'sidebar',
         condition: (data, siblingData, { user }) => user?.role !== ROLES.BARBER,
@@ -66,6 +71,7 @@ export const Services: CollectionConfig = {
       required: true,
       defaultValue: 0,
       min: 0,
+      label: 'قیمت',
       admin: {
         position: 'sidebar',
       },
@@ -76,6 +82,7 @@ export const Services: CollectionConfig = {
       required: true,
       defaultValue: 30,
       min: 5,
+      label: 'مدت زمان',
       admin: {
         position: 'sidebar',
         description: 'مدت زمان به دقیقه',
@@ -85,6 +92,7 @@ export const Services: CollectionConfig = {
       name: 'isActive',
       type: 'checkbox',
       defaultValue: true,
+      label: 'فعال',
       admin: {
         position: 'sidebar',
       },

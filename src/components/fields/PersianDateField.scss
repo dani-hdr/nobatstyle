@@ -1,0 +1,37 @@
+.date-time-field {
+  margin: 0 0 24px 0;
+
+  &__wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &.read-only {
+    opacity: 0.8;
+  }
+}
+
+.persian-date-field {
+  .rmdp-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--theme-elevation-200);
+    border-radius: 0;
+    height: auto;
+    padding: 1rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--theme-elevation-800);
+    transition: border 0.2s ease;
+  }
+
+  .rmdp-input:focus {
+    border-color: var(--theme-color);
+    box-shadow: none;
+  }
+
+  .rmdp-container {
+    display: block;
+  }
+}

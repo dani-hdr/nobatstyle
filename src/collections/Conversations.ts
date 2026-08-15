@@ -10,6 +10,10 @@ import { isAdmin } from '../access'
  */
 export const Conversations: CollectionConfig = {
   slug: 'conversations',
+  labels: {
+    singular: 'گفتگو',
+    plural: 'گفتگوها',
+  },
   admin: {
     useAsTitle: 'id',
     group: 'پیام‌ها',
@@ -80,21 +84,31 @@ export const Conversations: CollectionConfig = {
       required: true,
       hasMany: true,
       maxRows: 2,
+      label: 'شرکت‌کنندگان',
     },
     {
       name: 'barber',
       type: 'relationship',
       relationTo: 'barbers',
+      label: 'آرایشگر',
     },
     {
       name: 'lastMessage',
       type: 'text',
+      label: 'آخرین پیام',
       admin: { readOnly: true },
     },
     {
       name: 'lastMessageAt',
       type: 'date',
-      admin: { readOnly: true, position: 'sidebar' },
+      label: 'زمان آخرین پیام',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        components: {
+          Field: '/components/fields/PersianDateField#PersianDateTimeField',
+        },
+      },
     },
   ],
 }

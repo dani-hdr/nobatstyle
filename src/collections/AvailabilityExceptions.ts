@@ -9,6 +9,10 @@ import { isAdmin } from '../access'
  */
 export const AvailabilityExceptions: CollectionConfig = {
   slug: 'availabilityExceptions',
+  labels: {
+    singular: 'تعطیلی',
+    plural: 'تعطیلی‌ها',
+  },
   admin: {
     useAsTitle: 'label',
     group: 'آرایشگاه‌ها',
@@ -42,6 +46,7 @@ export const AvailabilityExceptions: CollectionConfig = {
       relationTo: 'barbers',
       required: true,
       index: true,
+      label: 'آرایشگر',
     },
     {
       name: 'label',
@@ -53,14 +58,19 @@ export const AvailabilityExceptions: CollectionConfig = {
       type: 'date',
       required: true,
       index: true,
+      label: 'تاریخ',
       admin: {
         date: { pickerAppearance: 'dayOnly' },
+        components: {
+          Field: '/components/fields/PersianDateField',
+        },
       },
     },
     {
       name: 'allDay',
       type: 'checkbox',
       defaultValue: true,
+      label: 'کل روز',
       admin: {
         position: 'sidebar',
       },
@@ -69,12 +79,13 @@ export const AvailabilityExceptions: CollectionConfig = {
       name: 'slots',
       type: 'array',
       label: 'بازه‌های غیرفعال',
+      labels: { singular: 'بازه', plural: 'بازه‌ها' },
       admin: {
         condition: (data) => data?.allDay === false,
       },
       fields: [
-        { name: 'start', type: 'text', required: true },
-        { name: 'end', type: 'text', required: true },
+        { name: 'start', type: 'text', required: true, label: 'شروع' },
+        { name: 'end', type: 'text', required: true, label: 'پایان' },
       ],
     },
   ],

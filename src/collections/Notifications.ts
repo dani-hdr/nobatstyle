@@ -4,6 +4,10 @@ import { isAdmin } from '../access'
 
 export const Notifications: CollectionConfig = {
   slug: 'notifications',
+  labels: {
+    singular: 'اعلان',
+    plural: 'اعلان‌ها',
+  },
   admin: {
     useAsTitle: 'title',
     group: 'اعلان‌ها',
@@ -41,11 +45,13 @@ export const Notifications: CollectionConfig = {
       relationTo: 'users',
       required: true,
       index: true,
+      label: 'کاربر',
     },
     {
       name: 'type',
       type: 'select',
       required: true,
+      label: 'نوع',
       options: [
         { label: 'رزرو', value: 'appointment' },
         { label: 'پیام', value: 'message' },
@@ -56,19 +62,28 @@ export const Notifications: CollectionConfig = {
     {
       name: 'title',
       type: 'text',
+      label: 'عنوان',
     },
     {
       name: 'body',
       type: 'textarea',
+      label: 'متن',
     },
     {
       name: 'readAt',
       type: 'date',
-      admin: { position: 'sidebar' },
+      label: 'زمان مطالعه',
+      admin: {
+        position: 'sidebar',
+        components: {
+          Field: '/components/fields/PersianDateField#PersianDateTimeField',
+        },
+      },
     },
     {
       name: 'data',
       type: 'json',
+      label: 'داده',
       admin: {
         description: 'داده اضافی ساختاریافته برای هدایت کاربر',
       },

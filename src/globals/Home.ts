@@ -20,9 +20,9 @@ export const Home: GlobalConfig = {
       name: 'hero',
       label: 'Hero',
       fields: [
-        { name: 'title', type: 'text' },
-        { name: 'subtitle', type: 'textarea' },
-        { name: 'image', type: 'upload', relationTo: 'media' },
+        { name: 'title', type: 'text', label: 'عنوان' },
+        { name: 'subtitle', type: 'textarea', label: 'زیرعنوان' },
+        { name: 'image', type: 'upload', relationTo: 'media', label: 'تصویر' },
       ],
     },
     {
@@ -30,10 +30,10 @@ export const Home: GlobalConfig = {
       name: 'stats',
       label: 'آمار (نمایش عمومی)',
       fields: [
-        { name: 'barbersCount', type: 'number', defaultValue: 0 },
-        { name: 'appointmentsCount', type: 'number', defaultValue: 0 },
-        { name: 'citiesCount', type: 'number', defaultValue: 0 },
-        { name: 'customersCount', type: 'number', defaultValue: 0 },
+        { name: 'barbersCount', type: 'number', defaultValue: 0, label: 'تعداد آرایشگرها' },
+        { name: 'appointmentsCount', type: 'number', defaultValue: 0, label: 'تعداد رزروها' },
+        { name: 'citiesCount', type: 'number', defaultValue: 0, label: 'تعداد شهرها' },
+        { name: 'customersCount', type: 'number', defaultValue: 0, label: 'تعداد مشتریان' },
       ],
     },
     {
@@ -41,10 +41,10 @@ export const Home: GlobalConfig = {
       name: 'promo',
       label: 'بنر تبلیغاتی',
       fields: [
-        { name: 'title', type: 'text' },
-        { name: 'body', type: 'textarea' },
-        { name: 'image', type: 'upload', relationTo: 'media' },
-        { name: 'link', type: 'text' },
+        { name: 'title', type: 'text', label: 'عنوان' },
+        { name: 'body', type: 'textarea', label: 'متن' },
+        { name: 'image', type: 'upload', relationTo: 'media', label: 'تصویر' },
+        { name: 'link', type: 'text', label: 'لینک' },
       ],
     },
     {

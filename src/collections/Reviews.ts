@@ -25,6 +25,10 @@ async function updateBarberStats(req: PayloadRequest, barberId: string) {
 
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
+  labels: {
+    singular: 'بازخورد',
+    plural: 'بازخوردها',
+  },
   admin: {
     useAsTitle: 'id',
     group: 'بازخورد',
@@ -61,6 +65,7 @@ export const Reviews: CollectionConfig = {
       relationTo: 'barbers',
       required: true,
       index: true,
+      label: 'آرایشگر',
     },
     {
       name: 'customer',
@@ -68,11 +73,13 @@ export const Reviews: CollectionConfig = {
       relationTo: 'users',
       required: true,
       index: true,
+      label: 'مشتری',
     },
     {
       name: 'appointment',
       type: 'relationship',
       relationTo: 'appointments',
+      label: 'رزرو',
       admin: { position: 'sidebar' },
     },
     {
@@ -81,17 +88,20 @@ export const Reviews: CollectionConfig = {
       required: true,
       min: 1,
       max: 5,
+      label: 'امتیاز',
       admin: { position: 'sidebar' },
     },
     {
       name: 'comment',
       type: 'textarea',
+      label: 'نظر',
     },
     {
       name: 'status',
       type: 'select',
       required: true,
       defaultValue: 'pending',
+      label: 'وضعیت',
       admin: { position: 'sidebar' },
       options: [
         { label: 'در انتظار', value: 'pending' },

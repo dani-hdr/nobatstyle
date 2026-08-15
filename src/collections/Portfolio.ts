@@ -8,6 +8,10 @@ import { isAdmin } from '../access'
  */
 export const Portfolio: CollectionConfig = {
   slug: 'portfolio',
+  labels: {
+    singular: 'تصویر نمونه‌کار',
+    plural: 'نمونه‌کارها',
+  },
   admin: {
     useAsTitle: 'title',
     group: 'آرایشگاه‌ها',
@@ -39,6 +43,7 @@ export const Portfolio: CollectionConfig = {
       name: 'title',
       type: 'text',
       required: true,
+      label: 'عنوان',
     },
     {
       name: 'barber',
@@ -46,17 +51,20 @@ export const Portfolio: CollectionConfig = {
       relationTo: 'barbers',
       required: true,
       index: true,
+      label: 'آرایشگر',
     },
     {
       name: 'image',
       type: 'upload',
       relationTo: 'media',
       required: true,
+      label: 'تصویر',
     },
     {
       name: 'isActive',
       type: 'checkbox',
       defaultValue: true,
+      label: 'فعال',
     },
   ],
 }

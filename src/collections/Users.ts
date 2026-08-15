@@ -5,6 +5,10 @@ import { isAdmin } from '../access'
 
 export const Users: CollectionConfig = {
   slug: 'users',
+  labels: {
+    singular: 'کاربر',
+    plural: 'کاربران',
+  },
   admin: {
     useAsTitle: 'name',
     group: 'کاربران',
@@ -30,6 +34,7 @@ export const Users: CollectionConfig = {
       type: 'text',
       required: true,
       maxLength: 60,
+      label: 'نام',
     },
     {
       name: 'role',
@@ -37,6 +42,7 @@ export const Users: CollectionConfig = {
       required: true,
       defaultValue: ROLES.CUSTOMER,
       saveToJWT: true,
+      label: 'نقش',
       options: [
         { label: 'مشتری', value: ROLES.CUSTOMER },
         { label: 'آرایشگر', value: ROLES.BARBER },
@@ -46,6 +52,7 @@ export const Users: CollectionConfig = {
     {
       name: 'phone',
       type: 'text',
+      label: 'شماره تماس',
       admin: {
         position: 'sidebar',
       },
@@ -54,6 +61,7 @@ export const Users: CollectionConfig = {
       name: 'avatar',
       type: 'upload',
       relationTo: 'media',
+      label: 'تصویر پروفایل',
       admin: {
         position: 'sidebar',
       },
@@ -62,6 +70,7 @@ export const Users: CollectionConfig = {
       name: 'isVerified',
       type: 'checkbox',
       defaultValue: false,
+      label: 'تأیید شده',
       admin: {
         position: 'sidebar',
         description: 'کاربر تأیید شده است',
@@ -72,6 +81,7 @@ export const Users: CollectionConfig = {
       type: 'relationship',
       relationTo: 'barbers',
       hasMany: false,
+      label: 'آرایشگر فعال',
       admin: {
         position: 'sidebar',
         condition: (data, siblingData) => data?.role === ROLES.BARBER,
@@ -83,11 +93,15 @@ export const Users: CollectionConfig = {
       access: {
         read: () => true,
       },
+      label: 'تاریخ ایجاد',
       admin: {
         readOnly: true,
         position: 'sidebar',
         date: {
           pickerAppearance: 'dayAndTime',
+        },
+        components: {
+          Field: '/components/fields/PersianDateField#PersianDateTimeField',
         },
       },
     },

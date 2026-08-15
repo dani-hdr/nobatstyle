@@ -6,6 +6,10 @@ import { isSlotAvailable, toHHMM, toMinutes } from '../utils/availability'
 
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
+  labels: {
+    singular: 'رزرو',
+    plural: 'رزروها',
+  },
   admin: {
     useAsTitle: 'id',
     group: 'رزرو',
@@ -86,6 +90,7 @@ export const Appointments: CollectionConfig = {
       relationTo: 'barbers',
       required: true,
       index: true,
+      label: 'آرایشگر',
     },
     {
       name: 'customer',
@@ -93,11 +98,13 @@ export const Appointments: CollectionConfig = {
       relationTo: 'users',
       required: true,
       index: true,
+      label: 'مشتری',
     },
     {
       name: 'service',
       type: 'relationship',
       relationTo: 'services',
+      label: 'خدمت',
       admin: {
         position: 'sidebar',
       },
@@ -105,16 +112,19 @@ export const Appointments: CollectionConfig = {
     {
       name: 'serviceName',
       type: 'text',
+      label: 'نام خدمت',
       admin: { readOnly: true, description: 'عکس فوری از نام خدمت در زمان رزرو' },
     },
     {
       name: 'price',
       type: 'number',
+      label: 'قیمت',
       admin: { readOnly: true, description: 'عکس فوری از قیمت در زمان رزرو' },
     },
     {
       name: 'duration',
       type: 'number',
+      label: 'مدت (دقیقه)',
       admin: { readOnly: true, description: 'مدت به دقیقه' },
     },
     {
@@ -122,9 +132,13 @@ export const Appointments: CollectionConfig = {
       type: 'date',
       required: true,
       index: true,
+      label: 'تاریخ',
       admin: {
         position: 'sidebar',
         date: { pickerAppearance: 'dayOnly' },
+        components: {
+          Field: '/components/fields/PersianDateField',
+        },
       },
     },
     {
@@ -132,6 +146,7 @@ export const Appointments: CollectionConfig = {
       type: 'text',
       required: true,
       index: true,
+      label: 'ساعت شروع',
       admin: {
         position: 'sidebar',
         description: 'ساعت شروع، e.g. 18:30',
@@ -140,6 +155,7 @@ export const Appointments: CollectionConfig = {
     {
       name: 'endTime',
       type: 'text',
+      label: 'ساعت پایان',
       admin: { readOnly: true, position: 'sidebar' },
     },
     {
@@ -148,6 +164,7 @@ export const Appointments: CollectionConfig = {
       required: true,
       defaultValue: 'pending',
       index: true,
+      label: 'وضعیت',
       admin: {
         position: 'sidebar',
       },
@@ -166,6 +183,7 @@ export const Appointments: CollectionConfig = {
     {
       name: 'cancelReason',
       type: 'textarea',
+      label: 'دلیل لغو',
       admin: { position: 'sidebar' },
     },
   ],

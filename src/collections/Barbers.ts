@@ -10,6 +10,10 @@ import { getAvailableSlots, getWorkingIntervals } from '../utils/availability'
  */
 export const Barbers: CollectionConfig = {
   slug: 'barbers',
+  labels: {
+    singular: 'آرایشگر',
+    plural: 'آرایشگرها',
+  },
   admin: {
     useAsTitle: 'shopName',
     group: 'آرایشگاه‌ها',
@@ -94,6 +98,7 @@ export const Barbers: CollectionConfig = {
       relationTo: 'users',
       required: true,
       index: true,
+      label: 'کاربر',
       filterOptions: ({ data }) => ({
         role: { equals: ROLES.BARBER },
       }),
@@ -114,6 +119,7 @@ export const Barbers: CollectionConfig = {
       type: 'text',
       unique: true,
       required: true,
+      label: 'شناسه آرایشگاه',
       admin: {
         description: 'شناسه یکتا برای آدرس پروفایل',
         condition: (data, siblingData, { user }) => user?.role !== ROLES.BARBER,
@@ -125,6 +131,7 @@ export const Barbers: CollectionConfig = {
       relationTo: 'cities',
       required: true,
       index: true,
+      label: 'شهر',
       admin: {
         position: 'sidebar',
       },
@@ -137,6 +144,7 @@ export const Barbers: CollectionConfig = {
     {
       name: 'location',
       type: 'point',
+      label: 'موقعیت مکانی',
       admin: {
         position: 'sidebar',
       },
@@ -149,6 +157,7 @@ export const Barbers: CollectionConfig = {
     {
       name: 'phone',
       type: 'text',
+      label: 'شماره تماس',
       admin: {
         position: 'sidebar',
       },
@@ -157,17 +166,20 @@ export const Barbers: CollectionConfig = {
       name: 'avatar',
       type: 'upload',
       relationTo: 'media',
+      label: 'تصویر پروفایل',
     },
     {
       name: 'cover',
       type: 'upload',
       relationTo: 'media',
+      label: 'تصویر کاور',
     },
     {
       name: 'experienceYears',
       type: 'number',
       min: 0,
       defaultValue: 0,
+      label: 'سال سابقه',
       admin: {
         position: 'sidebar',
       },
@@ -176,6 +188,7 @@ export const Barbers: CollectionConfig = {
       name: 'isVerified',
       type: 'checkbox',
       defaultValue: false,
+      label: 'تأیید شده',
       admin: {
         position: 'sidebar',
       },
@@ -185,6 +198,7 @@ export const Barbers: CollectionConfig = {
       type: 'checkbox',
       defaultValue: true,
       index: true,
+      label: 'فعال',
       admin: {
         position: 'sidebar',
       },
@@ -194,6 +208,7 @@ export const Barbers: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       index: true,
+      label: 'ویژه',
       admin: {
         position: 'sidebar',
         description: 'نمایش در بخش «آرایشگران ویژه» صفحه اصلی',
@@ -205,6 +220,7 @@ export const Barbers: CollectionConfig = {
       defaultValue: 0,
       min: 0,
       max: 5,
+      label: 'امتیاز',
       admin: {
         readOnly: true,
         position: 'sidebar',
@@ -215,6 +231,7 @@ export const Barbers: CollectionConfig = {
       type: 'number',
       defaultValue: 0,
       min: 0,
+      label: 'تعداد بازخورد',
       admin: {
         readOnly: true,
         position: 'sidebar',
@@ -233,6 +250,7 @@ export const Barbers: CollectionConfig = {
           name: 'day',
           type: 'select',
           required: true,
+          label: 'روز',
           options: [
             { label: 'شنبه', value: 'saturday' },
             { label: 'یکشنبه', value: 'sunday' },
@@ -247,14 +265,16 @@ export const Barbers: CollectionConfig = {
           name: 'enabled',
           type: 'checkbox',
           defaultValue: true,
+          label: 'فعال بودن روز',
         },
         {
           name: 'slots',
           type: 'array',
           label: 'بازه‌های کاری',
+          labels: { singular: 'بازه کاری', plural: 'بازه‌های کاری' },
           fields: [
-            { name: 'start', type: 'text', required: true },
-            { name: 'end', type: 'text', required: true },
+            { name: 'start', type: 'text', required: true, label: 'شروع' },
+            { name: 'end', type: 'text', required: true, label: 'پایان' },
           ],
         },
       ],

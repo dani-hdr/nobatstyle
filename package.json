@@ -28,7 +28,9 @@
     "next": "16.3.0",
     "payload": "3.88.0",
     "react": "19.2.6",
+    "react-date-object": "^2.1.9",
     "react-dom": "19.2.6",
+    "react-multi-date-picker": "^4.5.2",
     "sharp": "0.34.2"
   },
   "devDependencies": {

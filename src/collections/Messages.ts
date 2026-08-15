@@ -4,6 +4,10 @@ import { isAdmin } from '../access'
 
 export const Messages: CollectionConfig = {
   slug: 'messages',
+  labels: {
+    singular: 'پیام',
+    plural: 'پیام‌ها',
+  },
   admin: {
     useAsTitle: 'id',
     group: 'پیام‌ها',
@@ -44,6 +48,7 @@ export const Messages: CollectionConfig = {
       relationTo: 'conversations',
       required: true,
       index: true,
+      label: 'گفتگو',
     },
     {
       name: 'sender',
@@ -51,16 +56,24 @@ export const Messages: CollectionConfig = {
       relationTo: 'users',
       required: true,
       index: true,
+      label: 'فرستنده',
     },
     {
       name: 'content',
       type: 'textarea',
       required: true,
+      label: 'متن پیام',
     },
     {
       name: 'readAt',
       type: 'date',
-      admin: { position: 'sidebar' },
+      label: 'زمان مطالعه',
+      admin: {
+        position: 'sidebar',
+        components: {
+          Field: '/components/fields/PersianDateField#PersianDateTimeField',
+        },
+      },
     },
   ],
 }

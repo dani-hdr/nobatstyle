@@ -7,6 +7,10 @@ import { isAdmin } from '../access'
  */
 export const SubscriptionPlans: CollectionConfig = {
   slug: 'subscriptionPlans',
+  labels: {
+    singular: 'پلن اشتراک',
+    plural: 'پلن‌های اشتراک',
+  },
   admin: {
     useAsTitle: 'name',
     group: 'اشتراک',
@@ -35,6 +39,7 @@ export const SubscriptionPlans: CollectionConfig = {
       type: 'number',
       required: true,
       min: 0,
+      label: 'قیمت',
       admin: { position: 'sidebar' },
     },
     {
@@ -42,24 +47,28 @@ export const SubscriptionPlans: CollectionConfig = {
       type: 'number',
       required: true,
       min: 1,
+      label: 'مدت (ماه)',
       admin: { position: 'sidebar' },
     },
     {
       name: 'features',
       type: 'array',
       label: 'امکانات',
-      fields: [{ name: 'feature', type: 'text' }],
+      labels: { singular: 'امکان', plural: 'امکانات' },
+      fields: [{ name: 'feature', type: 'text', label: 'امکان' }],
     },
     {
       name: 'isActive',
       type: 'checkbox',
       defaultValue: true,
+      label: 'فعال',
       admin: { position: 'sidebar' },
     },
     {
       name: 'sortOrder',
       type: 'number',
       defaultValue: 0,
+      label: 'ترتیب نمایش',
       admin: { position: 'sidebar' },
     },
   ],

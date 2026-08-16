@@ -4,16 +4,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { cn } from '@/utils/cn'
-import { navItems } from './nav-items'
+import { DEFAULT_NAV_ITEMS, type NavItem } from './nav-items'
 
-export function DesktopNav() {
+export function DesktopNav({ items = DEFAULT_NAV_ITEMS }: { items?: NavItem[] }) {
   const pathname = usePathname()
 
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname?.startsWith(href))
 
   return (
     <nav aria-label="ناوبری اصلی" className="hidden items-center gap-1 md:flex">
-      {navItems.map((item) => {
+      {items.map((item) => {
         const active = isActive(item.href)
         return (
           <Link

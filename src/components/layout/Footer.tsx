@@ -1,13 +1,11 @@
 import { AtSign, Camera, Globe, Send } from 'lucide-react'
 import Link from 'next/link'
 
+import type { NavItem } from './nav-items'
+import { DEFAULT_NAV_ITEMS } from './nav-items'
 import { Container } from './Container'
 
-const quickLinks = [
-  { href: '/', label: 'خانه' },
-  { href: '/barbers', label: 'آرایشگرها' },
-  { href: '/services', label: 'خدمات' },
-]
+const fallbackQuickLinks: NavItem[] = DEFAULT_NAV_ITEMS
 
 const supportLinks = [
   { href: '/faq', label: 'سوالات متداول' },
@@ -48,13 +46,19 @@ function LinkColumn({ title, links }: { title: string; links: { href: string; la
   )
 }
 
-export function Footer() {
+export function Footer({
+  siteName = 'نوبت استایل',
+  quickLinks = fallbackQuickLinks,
+}: {
+  siteName?: string
+  quickLinks?: NavItem[]
+}) {
   return (
     <footer className="mt-auto border-t">
       <Container className="pt-14 pb-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12">
           <div className="sm:col-span-2 lg:col-span-4 lg:ps-1">
-            <p className="text-lg font-bold">نوبت استایل</p>
+            <p className="text-lg font-bold">{siteName}</p>
             <p className="text-muted-foreground mt-3 max-w-xs text-sm leading-6">
               آرایشگر مورد علاقت رو پیدا کن و به‌سادگی نوبت بگیر.
             </p>

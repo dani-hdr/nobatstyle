@@ -4,6 +4,7 @@ import { Search } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 
+import type { NavItem } from './nav-items'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/utils/cn'
 import { Container } from './Container'
@@ -12,7 +13,17 @@ import { Logo } from './Logo'
 import { MobileHeader } from './MobileHeader'
 import { SearchDialog } from './SearchDialog'
 
-export function Header() {
+type HeaderImage = { url?: string | null; alt?: string | null } | null
+
+export function Header({
+  siteName,
+  logo,
+  items,
+}: {
+  siteName?: string
+  logo?: HeaderImage
+  items?: NavItem[]
+}) {
   const [scrolled, setScrolled] = React.useState(false)
 
   React.useEffect(() => {
@@ -32,10 +43,10 @@ export function Header() {
       <div className={cn('transition-all', scrolled ? 'md:h-14' : 'md:h-16')}>
         <Container className="flex h-16 items-center justify-between md:h-full">
           <div className="hidden md:block">
-            <Logo />
+            <Logo siteName={siteName} logo={logo} />
           </div>
 
-          <DesktopNav />
+          <DesktopNav items={items} />
 
           <div className="flex items-center gap-2">
             <SearchDialog
@@ -57,7 +68,7 @@ export function Header() {
             </Link>
           </div>
 
-          <MobileHeader />
+          <MobileHeader siteName={siteName} logo={logo} items={items} />
         </Container>
       </div>
     </header>

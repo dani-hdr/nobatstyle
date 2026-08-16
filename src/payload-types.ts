@@ -837,6 +837,10 @@ export interface Setting {
   id: string;
   general?: {
     siteName?: string | null;
+    /**
+     * لوگوی برند (در هدر و فوتر نمایش داده می‌شود)
+     */
+    logo?: (string | null) | Media;
     supportPhone?: string | null;
     supportEmail?: string | null;
     timezone?: string | null;
@@ -855,6 +859,18 @@ export interface Setting {
      */
     maxBookingHorizonDays?: number | null;
     defaultStatus?: ('pending' | 'confirmed') | null;
+  };
+  navigation?: {
+    /**
+     * لینک‌های ناوبری هدر (خانه، آرایشگرها و...)
+     */
+    links?:
+      | {
+          label: string;
+          href: string;
+          id?: string | null;
+        }[]
+      | null;
   };
   auth?: {
     registrationEnabled?: boolean | null;
@@ -902,6 +918,7 @@ export interface SettingsSelect<T extends boolean = true> {
     | T
     | {
         siteName?: T;
+        logo?: T;
         supportPhone?: T;
         supportEmail?: T;
         timezone?: T;
@@ -913,6 +930,17 @@ export interface SettingsSelect<T extends boolean = true> {
         cancellationWindowMinutes?: T;
         maxBookingHorizonDays?: T;
         defaultStatus?: T;
+      };
+  navigation?:
+    | T
+    | {
+        links?:
+          | T
+          | {
+              label?: T;
+              href?: T;
+              id?: T;
+            };
       };
   auth?:
     | T

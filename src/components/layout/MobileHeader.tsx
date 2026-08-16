@@ -1,14 +1,23 @@
 import { Search } from 'lucide-react'
 
+import type { NavItem } from './nav-items'
 import { Button } from '@/components/ui/button'
 import { Logo } from './Logo'
 import { MobileMenu } from './MobileMenu'
 import { SearchDialog } from './SearchDialog'
 
-export function MobileHeader() {
+export function MobileHeader({
+  siteName,
+  logo,
+  items,
+}: {
+  siteName?: string
+  logo?: { url?: string | null; alt?: string | null } | null
+  items?: NavItem[]
+}) {
   return (
     <div className="flex h-16 items-center justify-between md:hidden">
-      <Logo />
+      <Logo siteName={siteName} logo={logo} />
       <div className="flex items-center gap-0.5">
         <SearchDialog
           trigger={
@@ -17,7 +26,7 @@ export function MobileHeader() {
             </Button>
           }
         />
-        <MobileMenu />
+        <MobileMenu items={items} />
       </div>
     </div>
   )

@@ -22,7 +22,11 @@ export const settingsPublicEndpoint: PayloadEndpoint = {
       overrideAccess: true,
     })
     return Response.json({
-      general: settings.general,
+      general: {
+        ...settings.general,
+        logo: settings.general?.logo ?? null,
+      },
+      navigation: settings.navigation ?? { links: [] },
       booking: {
         slotStepMinutes: settings.booking?.slotStepMinutes ?? 15,
         cancellationWindowMinutes: settings.booking?.cancellationWindowMinutes ?? 120,

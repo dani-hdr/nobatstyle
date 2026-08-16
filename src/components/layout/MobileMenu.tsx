@@ -13,7 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { navItems } from './nav-items'
+import { DEFAULT_NAV_ITEMS, type NavItem } from './nav-items'
 
 const supportItems = [
   { href: '/support', label: 'پشتیبانی', Icon: Headphones },
@@ -33,7 +33,7 @@ function SheetLink({ href, children }: { href: string; children: React.ReactNode
   )
 }
 
-export function MobileMenu() {
+export function MobileMenu({ items = DEFAULT_NAV_ITEMS }: { items?: NavItem[] }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -55,7 +55,7 @@ export function MobileMenu() {
           <nav aria-label="ناوبری">
             <div className="text-muted-foreground mb-2 px-1 text-xs font-medium">ناوبری</div>
             <ul className="flex flex-col">
-              {navItems.map((item) => (
+              {items.map((item) => (
                 <li key={item.href}>
                   <SheetLink href={item.href}>{item.label}</SheetLink>
                 </li>

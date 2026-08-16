@@ -21,6 +21,7 @@ export const Settings: GlobalConfig = {
       label: 'عمومی',
       fields: [
         { name: 'siteName', type: 'text', label: 'نام سایت' },
+        { name: 'logo', type: 'upload', relationTo: 'media', label: 'لوگو', admin: { description: 'لوگوی برند (در هدر و فوتر نمایش داده می‌شود)' } },
         { name: 'supportPhone', type: 'text', label: 'تلفن پشتیبانی' },
         { name: 'supportEmail', type: 'text', label: 'ایمیل پشتیبانی' },
         { name: 'timezone', type: 'text', defaultValue: 'Asia/Tehran', label: 'منطقه زمانی' },
@@ -61,6 +62,25 @@ export const Settings: GlobalConfig = {
           options: [
             { label: 'در انتظار تأیید', value: 'pending' },
             { label: 'تأیید خودکار', value: 'confirmed' },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'group',
+      name: 'navigation',
+      label: 'ناوبری',
+      fields: [
+        {
+          name: 'links',
+          type: 'array',
+          label: 'لینک‌های منوی بالا',
+          admin: {
+            description: 'لینک‌های ناوبری هدر (خانه، آرایشگرها و...)',
+          },
+          fields: [
+            { name: 'label', type: 'text', required: true, label: 'عنوان' },
+            { name: 'href', type: 'text', required: true, label: 'آدرس' },
           ],
         },
       ],

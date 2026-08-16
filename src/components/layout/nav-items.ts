@@ -3,7 +3,7 @@ export type NavItem = {
   label: string
 }
 
-export const navItems: NavItem[] = [
+export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'خانه' },
   { href: '/barbers', label: 'آرایشگرها' },
   { href: '/services', label: 'خدمات' },

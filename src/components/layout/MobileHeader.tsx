@@ -1,0 +1,24 @@
+import { Search } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Logo } from './Logo'
+import { MobileMenu } from './MobileMenu'
+import { SearchDialog } from './SearchDialog'
+
+export function MobileHeader() {
+  return (
+    <div className="flex h-16 items-center justify-between md:hidden">
+      <Logo />
+      <div className="flex items-center gap-0.5">
+        <SearchDialog
+          trigger={
+            <Button variant="ghost" size="icon" className="rounded-full" aria-label="جستجو">
+              <Search className="size-5" />
+            </Button>
+          }
+        />
+        <MobileMenu />
+      </div>
+    </div>
+  )
+}

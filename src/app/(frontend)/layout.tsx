@@ -1,18 +1,33 @@
-import React from 'react'
-import './styles.css'
+import './globals.css'
+
+import { Vazirmatn } from 'next/font/google'
+
+import { Header } from '@/components/layout/Header'
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
+
+const vazirmatn = Vazirmatn({
+  subsets: ['arabic'],
+  variable: '--font-vazirmatn',
+  display: 'swap',
+})
 
 export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  description: 'پلتفرم نوبت‌گیری آنلاین آرایشگاه',
+  title: {
+    default: 'نوبت استایل',
+    template: '%s | نوبت استایل',
+  },
 }
 
-export default async function RootLayout(props: { children: React.ReactNode }) {
+export default function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
   return (
-    <html lang="en">
-      <body>
-        <main>{children}</main>
+    <html lang="fa" dir="rtl" className={vazirmatn.variable}>
+      <body className="flex min-h-dvh flex-col">
+        <Header />
+        <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+        <MobileBottomNav />
       </body>
     </html>
   )

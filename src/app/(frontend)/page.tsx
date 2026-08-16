@@ -1,11 +1,14 @@
-import { Container } from '@/components/layout/Container'
+import { Hero } from '@/components/home/Hero'
+import { PopularServices } from '@/components/home/PopularServices'
+import { getHomeContent } from '@/lib/home'
 
 export default async function HomePage() {
+  const { hero, stats, popularServices } = await getHomeContent()
+
   return (
-    <Container className="py-16">
-      <div className="rounded-2xl border border-dashed p-16 text-center text-muted-foreground">
-        محتوای صفحه اصلی به‌زودی اضافه می‌شود.
-      </div>
-    </Container>
+    <>
+      <Hero hero={hero} stats={stats} />
+      <PopularServices services={popularServices} />
+    </>
   )
 }

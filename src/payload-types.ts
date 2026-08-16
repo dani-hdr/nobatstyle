@@ -262,6 +262,38 @@ export interface City {
    */
   generateSlug?: boolean | null;
   slug: string;
+  province:
+    | 'azarbaijan-sharghi'
+    | 'azarbaijan-gharbi'
+    | 'ardabil'
+    | 'isfahan'
+    | 'alborz'
+    | 'ilam'
+    | 'bushehr'
+    | 'tehran'
+    | 'chaharmahal-bakhtiari'
+    | 'khorasan-jonubi'
+    | 'khorasan-razavi'
+    | 'khorasan-shomali'
+    | 'khuzestan'
+    | 'zanjan'
+    | 'semnan'
+    | 'sistan-baluchestan'
+    | 'fars'
+    | 'qazvin'
+    | 'qom'
+    | 'kurdistan'
+    | 'kerman'
+    | 'kermanshah'
+    | 'kohgiluyeh-boyerahmad'
+    | 'golestan'
+    | 'gilan'
+    | 'lorestan'
+    | 'mazandaran'
+    | 'markazi'
+    | 'hormozgan'
+    | 'hamadan'
+    | 'yazd';
   isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -610,6 +642,7 @@ export interface CitiesSelect<T extends boolean = true> {
   name?: T;
   generateSlug?: T;
   slug?: T;
+  province?: T;
   isActive?: T;
   updatedAt?: T;
   createdAt?: T;

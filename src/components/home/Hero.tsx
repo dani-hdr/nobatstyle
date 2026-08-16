@@ -2,6 +2,7 @@ import Image from 'next/image'
 
 import { BarberSearch } from '@/components/home/BarberSearch'
 import { Container } from '@/components/layout/Container'
+import type { ProvinceGroup } from '@/lib/barber-search'
 import type { Home } from '@/payload-types'
 
 const STAT_KEYS = [
@@ -11,8 +12,6 @@ const STAT_KEYS = [
   { key: 'customersCount', label: 'مشتری راضی', suffix: '‌+' },
 ] as const
 
-type SearchCity = { id: string; name: string }
-
 export function Hero({
   hero,
   stats,
@@ -20,7 +19,7 @@ export function Hero({
 }: {
   hero: Home['hero']
   stats: Home['stats']
-  cities: SearchCity[]
+  cities: ProvinceGroup[]
 }) {
   const image = hero?.image && typeof hero.image !== 'string' ? hero.image : null
 

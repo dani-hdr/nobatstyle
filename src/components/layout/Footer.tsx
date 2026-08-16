@@ -56,23 +56,23 @@ export function Footer({
   return (
     <footer className="mt-auto border-t">
       <Container className="pt-14 pb-20  md:pb-8">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12">
-          <div className="sm:col-span-2 lg:col-span-4 lg:ps-1">
+        <div className="grid grid-cols-2 gap-10  lg:grid-cols-12">
+          <div className="col-span-full lg:col-span-4 lg:ps-1">
             <p className="text-lg font-bold">{siteName}</p>
             <p className="text-muted-foreground mt-3 max-w-xs text-sm leading-6">
               آرایشگر مورد علاقت رو پیدا کن و به‌سادگی نوبت بگیر.
             </p>
           </div>
 
-          <div className="sm:col-span-1 lg:col-span-2">
+          <div className=" lg:col-span-2">
             <LinkColumn title="دسترسی سریع" links={quickLinks} />
           </div>
 
-          <div className="sm:col-span-1 lg:col-span-3">
+          <div className=" lg:col-span-2">
             <LinkColumn title="پشتیبانی" links={supportLinks} />
           </div>
 
-          <div className="sm:col-span-1 lg:col-span-3">
+          <div className=" lg:col-span-2">
             <LinkColumn title="برای آرایشگران" links={professionalLinks} />
           </div>
         </div>

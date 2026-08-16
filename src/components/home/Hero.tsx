@@ -1,5 +1,6 @@
 import Image from 'next/image'
 
+import { BarberSearch } from '@/components/home/BarberSearch'
 import { Container } from '@/components/layout/Container'
 import type { Home } from '@/payload-types'
 
@@ -10,12 +11,16 @@ const STAT_KEYS = [
   { key: 'customersCount', label: 'مشتری راضی', suffix: '‌+' },
 ] as const
 
+type SearchCity = { id: string; name: string }
+
 export function Hero({
   hero,
   stats,
+  cities,
 }: {
   hero: Home['hero']
   stats: Home['stats']
+  cities: SearchCity[]
 }) {
   const image = hero?.image && typeof hero.image !== 'string' ? hero.image : null
 
@@ -27,19 +32,23 @@ export function Hero({
            زیبایی وقت میخواهد
           </span>
 
-          <h1 className="text-balance text-4xl font-bold leading-[1.15] tracking-tight md:text-5xl lg:text-[3.4rem] ">
+          <h1 className="text-balance text-3xl font-bold leading-[1.15] tracking-tight md:text-5xl lg:text-[3.4rem] ">
             {hero?.title}
           </h1>
 
-          <p className="md:text-muted-foreground max-w-md text-pretty font-semibold md:font-normal leading-7 text-sm md:text-lg">
+          <p className="md:text-muted-foreground max-w-md text-pretty font-medium md:font-normal leading-7 text-sm md:text-lg">
             {hero?.subtitle}
           </p>
 
+          <div className="w-full max-w-md hidden md:block">
+            <BarberSearch cities={cities} />
+          </div>
+
           {stats && (
-            <dl className="mt-2 flex w-full max-w-md flex-wrap gap-x-8 gap-y-5">
+            <dl className="md:mt-2 flex w-full max-w-md flex-wrap justify-end md:justify-start gap-x-8 gap-y-5">
               {STAT_KEYS.filter(({ key }) => stats[key]).map(({ key, label, suffix }) => (
-                <div key={key} className="flex flex-col">
-                  <dt className="text-muted-foreground order-2 text-xs">{label}</dt>
+                <div key={key} className="flex flex-col items-center">
+                  <dt className="md:text-muted-foreground order-2 text-xs">{label}</dt>
                   <dd className="text-2xl font-bold">
                     {Number(stats[key]).toLocaleString('fa-IR')}
                     {suffix}
@@ -49,7 +58,9 @@ export function Hero({
             </dl>
           )}
         </div>
-
+ <div className="w-full max-w-[90%] mx-auto absolute -bottom-8 z-20 left-0 right-0  md:hidden">
+            <BarberSearch cities={cities} />
+          </div>
         <div className="absolute left-0 right-0 top-0 bottom-0 md:relative ">
           {image?.url ? (
             <div className="relative aspect-[4/3] w-full h-full overflow-hidden md:rounded-3xl">

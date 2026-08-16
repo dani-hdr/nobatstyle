@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 
 export function SearchDialog({ trigger }: { trigger: React.ReactNode }) {
   const [value, setValue] = React.useState('')
@@ -25,12 +26,12 @@ export function SearchDialog({ trigger }: { trigger: React.ReactNode }) {
           </DialogHeader>
         <div className="relative">
           <Search className="text-muted-foreground pointer-events-none absolute inset-s-3.5 top-1/2 size-4 -translate-y-1/2" />
-          <input
+          <Input
             type="search"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="جستجو آرایشگر، سالن یا خدمت..."
-            className="focus-visible:ring-ring h-11 w-full rounded-xl border border-input bg-transparent pe-4 ps-10 text-sm outline-none transition-colors placeholder:text-muted-foreground"
+            className="h-11 rounded-xl pe-4 ps-10"
           />
         </div>
         <p className="text-muted-foreground text-xs">

@@ -1,5 +1,7 @@
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { en } from '@payloadcms/translations/languages/en'
+import { fa } from '@payloadcms/translations/languages/fa'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -55,6 +57,10 @@ export default buildConfig({
     SubscriptionPlans,
   ],
   globals: [Settings, Home],
+  i18n: {
+    fallbackLanguage: 'en',
+    supportedLanguages: { en, fa },
+  },
   endpoints: [
     settingsPublicEndpoint,
     statusMetaEndpoint,

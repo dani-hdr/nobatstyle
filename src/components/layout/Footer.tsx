@@ -1,9 +1,9 @@
 import { AtSign, Camera, Globe, Send } from 'lucide-react'
 import Link from 'next/link'
 
+import { Container } from './Container'
 import type { NavItem } from './nav-items'
 import { DEFAULT_NAV_ITEMS } from './nav-items'
-import { Container } from './Container'
 
 const fallbackQuickLinks: NavItem[] = DEFAULT_NAV_ITEMS
 
@@ -55,7 +55,7 @@ export function Footer({
 }) {
   return (
     <footer className="mt-auto border-t">
-      <Container className="pt-14 pb-8">
+      <Container className="pt-14 pb-20  md:pb-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12">
           <div className="sm:col-span-2 lg:col-span-4 lg:ps-1">
             <p className="text-lg font-bold">{siteName}</p>
@@ -94,6 +94,7 @@ export function Footer({
               </li>
             ))}
           </ul>
+         
         </div>
       </Container>
     </footer>

@@ -39,11 +39,11 @@ export function MobileBottomNav() {
             >
               <span
                 className={cn(
-                  'flex h-7 items-center justify-center rounded-full px-3 transition-colors',
-                  active && 'bg-muted',
+                  'flex h-7 items-center justify-center px-3 transition-colors',
+                  
                 )}
               >
-                <Icon className={cn('size-[22px]', active && 'scale-[1.05]')} />
+                <Icon className={cn('size-5.5', active && 'scale-[1.05]')} />
               </span>
               {label}
             </Link>

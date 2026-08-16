@@ -4,13 +4,13 @@ import { Search } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 
-import type { NavItem } from './nav-items'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/utils/cn'
 import { Container } from './Container'
 import { DesktopNav } from './DesktopNav'
 import { Logo } from './Logo'
 import { MobileHeader } from './MobileHeader'
+import type { NavItem } from './nav-items'
 import { SearchDialog } from './SearchDialog'
 
 type HeaderImage = { url?: string | null; alt?: string | null } | null
@@ -37,7 +37,7 @@ export function Header({
     <header
       className={cn(
         'bg-background/80 sticky top-0 z-40 backdrop-blur transition-all duration-200',
-        scrolled ? 'border-b shadow-sm' : 'border-b border-transparent',
+        scrolled ? 'border-b' : 'border-b border-transparent',
       )}
     >
       <div className={cn('transition-all', scrolled ? 'md:h-14' : 'md:h-16')}>

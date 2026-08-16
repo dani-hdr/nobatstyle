@@ -1,9 +1,9 @@
 import { Search } from 'lucide-react'
 
-import type { NavItem } from './nav-items'
 import { Button } from '@/components/ui/button'
 import { Logo } from './Logo'
 import { MobileMenu } from './MobileMenu'
+import type { NavItem } from './nav-items'
 import { SearchDialog } from './SearchDialog'
 
 export function MobileHeader({
@@ -16,7 +16,7 @@ export function MobileHeader({
   items?: NavItem[]
 }) {
   return (
-    <div className="flex h-16 items-center justify-between md:hidden">
+    <div className="flex w-full h-16 items-center justify-between md:hidden">
       <Logo siteName={siteName} logo={logo} />
       <div className="flex items-center gap-0.5">
         <SearchDialog

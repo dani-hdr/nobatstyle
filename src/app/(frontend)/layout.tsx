@@ -32,13 +32,17 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
       <body className="flex min-h-dvh flex-col">
-        <Header siteName={siteInfo.siteName} logo={siteInfo.logo} items={siteInfo.navLinks} />
+        
+          <Header siteName={siteInfo.siteName} logo={siteInfo.logo} items={siteInfo.navLinks} />
 
-        <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+          <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
+            {children}
+          </main>
 
-        <Footer siteName={siteInfo.siteName} quickLinks={siteInfo.navLinks} />
+          <Footer siteName={siteInfo.siteName} quickLinks={siteInfo.navLinks} />
 
-        <MobileBottomNav />
+          <MobileBottomNav />
+        
       </body>
     </html>
   )

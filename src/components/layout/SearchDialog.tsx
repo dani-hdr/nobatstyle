@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
@@ -18,10 +19,12 @@ export function SearchDialog({ trigger }: { trigger: React.ReactNode }) {
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent aria-describedby={undefined}>
-        <DialogTitle className="sr-only">جستجو</DialogTitle>
-        <DialogDescription className="sr-only">جستجوی آرایشگر، سالن یا خدمت</DialogDescription>
+          <DialogHeader>
+             <DialogTitle className="sr-only"></DialogTitle>
+              <DialogDescription className="sr-only">جستجوی آرایشگر، سالن یا خدمت</DialogDescription>
+          </DialogHeader>
         <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2" />
+          <Search className="text-muted-foreground pointer-events-none absolute inset-s-3.5 top-1/2 size-4 -translate-y-1/2" />
           <input
             type="search"
             value={value}

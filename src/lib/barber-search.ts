@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import { PROVINCE_LABELS } from '@/data/iran-provinces'
 import type { City } from '@/payload-types'
 import config from '@payload-config'
@@ -19,7 +21,8 @@ export type ProvinceGroup = {
  * Loads all active cities for the hero search city filter, grouped and sorted
  * by province. Returns an empty list when the collection has no active cities.
  */
-export async function getCities(): Promise<ProvinceGroup[]> {
+export const getCities = cache(
+  async function getCities(): Promise<ProvinceGroup[]> {
   const payload = await getPayload({ config })
 
   const { docs } = await payload.find({
@@ -42,4 +45,5 @@ export async function getCities(): Promise<ProvinceGroup[]> {
     label: PROVINCE_LABELS[province] ?? province,
     cities,
   }))
-}
+  },
+)

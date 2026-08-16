@@ -4,6 +4,8 @@ import { Search } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 
+import { BarberSearch } from '@/components/home/BarberSearch'
+import type { ProvinceGroup } from '@/lib/barber-search'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/utils/cn'
 import { Container } from './Container'
@@ -11,7 +13,6 @@ import { DesktopNav } from './DesktopNav'
 import { Logo } from './Logo'
 import { MobileHeader } from './MobileHeader'
 import type { NavItem } from './nav-items'
-import { SearchDialog } from './SearchDialog'
 
 type HeaderImage = { url?: string | null; alt?: string | null } | null
 
@@ -19,10 +20,12 @@ export function Header({
   siteName,
   logo,
   items,
+  cities,
 }: {
   siteName?: string
   logo?: HeaderImage
   items?: NavItem[]
+  cities: ProvinceGroup[]
 }) {
   const [scrolled, setScrolled] = React.useState(false)
 
@@ -49,7 +52,8 @@ export function Header({
           <DesktopNav items={items} />
 
           <div className="flex items-center gap-2">
-            <SearchDialog
+            <BarberSearch
+              cities={cities}
               trigger={
                 <Button
                   variant="ghost"
@@ -68,7 +72,7 @@ export function Header({
             </Link>
           </div>
 
-          <MobileHeader siteName={siteName} logo={logo} items={items} />
+          <MobileHeader siteName={siteName} logo={logo} items={items} cities={cities} />
         </Container>
       </div>
     </header>

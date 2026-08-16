@@ -1,19 +1,27 @@
 'use client'
 
-import { ChevronDown, LoaderCircle, MapPin, Search, Star } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, MapPin, Search, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
 
+import { useMediaQuery } from '@/hooks/use-media-query'
+import { getStoredCityId, setStoredCityId } from '@/lib/city-storage'
 import type { ProvinceGroup, SearchCity } from '@/lib/barber-search'
 import { Button } from '@/components/ui/button'
 import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group'
 import {
   Select,
   SelectContent,
@@ -40,17 +48,114 @@ type ResultBarber = {
   city?: ({ id: string; name: string } | string | null) | null
 }
 
-export function BarberSearch({ cities }: { cities: ProvinceGroup[] }) {
+type BarberSearchProps = {
+  cities: ProvinceGroup[]
+  /** Custom element that opens the search on interaction. Defaults to a search bar. */
+  trigger?: React.ReactNode
+}
+
+export function BarberSearch({ cities, trigger }: BarberSearchProps) {
   const [open, setOpen] = React.useState(false)
+  const isDesktop = useMediaQuery('(min-width: 768px)') ?? true
+
+  const content = (
+    <BarberSearchContent
+      cities={cities}
+      onSelect={() => setOpen(false)}
+    />
+  )
+
+  return (
+    <>
+      {trigger ? (
+        <div onClick={() => setOpen(true)}>{trigger}</div>
+      ) : (
+        <TriggerBar open={setOpen} cities={cities} />
+      )}
+
+      {/* Desktop opens a modal dialog; mobile opens a bottom sheet. */}
+      {isDesktop ? (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-2xl gap-4 p-5">
+            <DialogHeader>
+              <DialogTitle>جستجوی آرایشگر</DialogTitle>
+              <DialogDescription>
+                آرایشگر یا سالن موردنظرت را جستجو کن، یا از میان شهرها فیلتر کن.
+              </DialogDescription>
+            </DialogHeader>
+            {content}
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="bottom" className="h-[85dvh] gap-0 rounded-t-3xl">
+            <SheetHeader className="border-b">
+              <SheetTitle>جستجوی آرایشگر</SheetTitle>
+              <SheetDescription>آرایشگر یا سالن موردنظرت را جستجو کن.</SheetDescription>
+            </SheetHeader>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {content}
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
+    </>
+  )
+}
+
+function TriggerBar({ cities, open }: { cities: ProvinceGroup[]; open: (v: boolean) => void }) {
+  const [storedCityId] = React.useState(getStoredCityId)
+  const city = allCities(cities).find((c) => c.id === storedCityId)
+
+  return (
+    <div className="bg-background/80 flex items-center gap-3 rounded-xl border p-2 pl-3 shadow-lg backdrop-blur">
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        aria-label="جستجو"
+        className="shrink-0"
+        onClick={() => open(true)}
+      >
+        <Search className="size-5" />
+      </Button>
+      <button
+        type="button"
+        onClick={() => open(true)}
+        className="text-muted-foreground flex-1 text-start text-sm"
+      >
+        جستجوی آرایشگر یا سالن...
+      </button>
+      {city && (
+        <span className="bg-muted text-muted-foreground hidden items-center gap-1 rounded-md px-2 py-1 text-xs sm:inline-flex">
+          <MapPin className="size-3.5" />
+          {city.name}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function BarberSearchContent({
+  cities,
+  onSelect,
+}: {
+  cities: ProvinceGroup[]
+  onSelect: () => void
+}) {
   const [query, setQuery] = React.useState('')
-  const [cityId, setCityId] = React.useState('')
+  const [cityId, setCityId] = React.useState(() => getStoredCityId())
   const [results, setResults] = React.useState<ResultBarber[]>([])
   const [loading, setLoading] = React.useState(false)
   const [hasSearched, setHasSearched] = React.useState(false)
 
   const abortRef = React.useRef<AbortController | null>(null)
 
-  const selectedCity = allCities(cities).find((c) => c.id === cityId)
+  const changeCity = (v: string) => {
+    const next = v === '__all__' ? '' : v
+    setCityId(next)
+    setStoredCityId(next)
+  }
 
   const runSearch = React.useCallback(async (q: string, c: string) => {
     abortRef.current?.abort()
@@ -95,130 +200,107 @@ export function BarberSearch({ cities }: { cities: ProvinceGroup[] }) {
   }, [query, cityId, runSearch])
 
   const hasFilter = query.trim() !== '' || cityId !== ''
+  const searchParams = new URLSearchParams()
+  if (query.trim()) searchParams.set('q', query.trim())
+  if (cityId) searchParams.set('city', cityId)
 
   return (
-    <>
-      {/* Trigger — clicking/focusing opens the search drawer */}
-      <div className="flex items-center gap-3 rounded-xl border bg-background/80 p-2 pl-3 shadow-lg backdrop-blur">
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          aria-label="جستجو"
-          className="shrink-0"
-          onClick={() => setOpen(true)}
-        >
-          <Search className="size-5" />
-        </Button>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex-1 text-start text-sm text-muted-foreground"
-        >
-          جستجوی آرایشگر یا سالن...
-        </button>
-        <span className="bg-muted text-muted-foreground hidden items-center gap-1 rounded-md px-2 py-1 text-xs sm:inline-flex">
-          <MapPin className="size-3.5" />
-          {selectedCity ? selectedCity.name : 'همه شهرها'}
-        </span>
+    <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 md:p-0">
+      {/* Search field + city filter */}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <InputGroup className="h-11 flex-1 rounded-full">
+          <InputGroupInput
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="جستجوی آرایشگر یا سالن..."
+            className="ps-3"
+          />
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton aria-label="جستجو" onClick={() => void runSearch(query, cityId)}>
+              <Search />
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+
+        <Select value={cityId || '__all__'} onValueChange={changeCity}>
+          <SelectTrigger
+            size="sm"
+            aria-label="فیلتر بر اساس شهر"
+            className="h-11 w-full shrink-0 sm:w-56"
+          >
+            <SelectValue placeholder="فیلتر شهر" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[60dvh]">
+            <SelectItem value="__all__">همه شهرها</SelectItem>
+            {cities.map((group) => (
+              <SelectGroup key={group.province}>
+                <SelectLabel>{group.label}</SelectLabel>
+                {group.cities.map((city) => (
+                  <SelectItem key={city.id} value={city.id}>
+                    {city.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-[82dvh] gap-0 rounded-t-3xl sm:h-[70dvh]">
-          <SheetHeader className="border-b">
-            <SheetTitle>جستجوی آرایشگر</SheetTitle>
-            <SheetDescription>آرایشگر یا سالن موردنظرت را جستجو کن.</SheetDescription>
-          </SheetHeader>
+      {/* No filter yet */}
+      {!hasFilter && (
+        <div className="text-muted-foreground flex flex-1 items-center justify-center p-6 text-center text-sm">
+          شروع به تایپ کن یا شهری را انتخاب کن تا آرایشگرها نمایش داده شوند.
+        </div>
+      )}
 
-          <div className="flex flex-col gap-3 overflow-hidden p-3">
-            {/* Search input + city filter */}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
-                <Command
-                  shouldFilter={false}
-                  className="rounded-xl border bg-background"
-                >
-                  <CommandInput
-                    value={query}
-                    onValueChange={setQuery}
-                    placeholder="جستجوی آرایشگر یا سالن..."
-                    className="pe-3"
-                  />
-                  <CommandList aria-hidden={!hasSearched} className={hasSearched ? '' : 'hidden'}>
-                    {loading && (
-                      <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
-                        <LoaderCircle className="size-4 animate-spin" />
-                        در حال جستجو...
-                      </div>
-                    )}
+      {/* Loading */}
+      {hasFilter && loading && (
+        <div className="text-muted-foreground flex items-center justify-center gap-2 p-6 text-sm">
+          <LoaderCircle className="size-4 animate-spin" />
+          در حال جستجو...
+        </div>
+      )}
 
-                    {!loading && results.length === 0 && (
-                      <CommandEmpty>نتیجه‌ای یافت نشد.</CommandEmpty>
-                    )}
-                  </CommandList>
-                </Command>
-              </div>
-
-              <Select value={cityId || '__all__'} onValueChange={(v) => setCityId(v === '__all__' ? '' : v)}>
-                <SelectTrigger
-                  size="sm"
-                  aria-label="فیلتر بر اساس شهر"
-                  className="h-10 w-full shrink-0 sm:w-56"
-                >
-                  <SelectValue placeholder="فیلتر شهر" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[60dvh]">
-                  <SelectItem value="__all__">همه شهرها</SelectItem>
-                  {cities.map((group) => (
-                    <SelectGroup key={group.province}>
-                      <SelectLabel>{group.label}</SelectLabel>
-                      {group.cities.map((city) => (
-                        <SelectItem key={city.id} value={city.id}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Results list */}
-            <div className="flex-1 overflow-y-auto">
-              {!hasFilter ? (
-                <p className="text-muted-foreground flex h-full items-center justify-center p-6 text-center text-sm">
-                  شروع به تایپ کن یا شهری را انتخاب کن تا آرایشگرها نمایش داده شوند.
-                </p>
-              ) : loading ? (
-                <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
-                  <LoaderCircle className="size-4 animate-spin" />
-                  در حال جستجو...
-                </div>
-              ) : results.length === 0 ? (
-                <p className="text-muted-foreground p-6 text-center text-sm">
-                  هیچ آرایشگری پیدا نشد.
-                </p>
-              ) : (
-                <ul className="divide-y">
-                  {results.map((barber) => (
-                    <li key={barber.id}>
-                      <Link
-                        href={`/barbers/${barber.shopSlug || barber.id}`}
-                        onClick={() => setOpen(false)}
-                        className="hover:bg-accent flex items-center gap-3 rounded-lg p-3 transition-colors"
-                      >
-                        <BarberItem row={barber} />
-                        <ChevronDown className="text-muted-foreground size-4 -rotate-90 shrink-0" />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+      {/* Results */}
+      {hasFilter && !loading && (
+        <>
+          <div className="flex-1 overflow-y-auto">
+            {results.length === 0 ? (
+              <p className="text-muted-foreground p-6 text-center text-sm">
+                هیچ آرایشگری پیدا نشد.
+              </p>
+            ) : (
+              <ul className="divide-y">
+                {results.map((barber) => (
+                  <li key={barber.id}>
+                    <Link
+                      href={`/barbers/${barber.shopSlug || barber.id}`}
+                      onClick={onSelect}
+                      className="hover:bg-accent flex items-center gap-3 rounded-lg p-3 transition-colors"
+                    >
+                      <BarberItem row={barber} />
+                      <ArrowLeft className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        </SheetContent>
-      </Sheet>
-    </>
+
+          {/* See all when more than 2 results */}
+          {results.length > 2 && (
+            <div className="border-t pt-3">
+              <Button asChild variant="outline" className="w-full">
+                <Link href={`/barbers${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}>
+                  مشاهده همه {results.length} نتیجه
+                </Link>
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 

@@ -1,25 +1,29 @@
 import { Search } from 'lucide-react'
 
+import { BarberSearch } from '@/components/home/BarberSearch'
+import type { ProvinceGroup } from '@/lib/barber-search'
 import { Button } from '@/components/ui/button'
 import { Logo } from './Logo'
 import { MobileMenu } from './MobileMenu'
 import type { NavItem } from './nav-items'
-import { SearchDialog } from './SearchDialog'
 
 export function MobileHeader({
   siteName,
   logo,
   items,
+  cities,
 }: {
   siteName?: string
   logo?: { url?: string | null; alt?: string | null } | null
   items?: NavItem[]
+  cities: ProvinceGroup[]
 }) {
   return (
     <div className="flex w-full h-16 items-center justify-between md:hidden">
       <Logo siteName={siteName} logo={logo} />
       <div className="flex items-center gap-0.5">
-        <SearchDialog
+        <BarberSearch
+          cities={cities}
           trigger={
             <Button variant="ghost" size="icon" className="rounded-full" aria-label="جستجو">
               <Search className="size-5" />

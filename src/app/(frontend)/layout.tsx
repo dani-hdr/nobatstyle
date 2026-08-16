@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { DirectionProvider } from '@/components/ui/direction'
+import { getCities } from '@/lib/barber-search'
 import { getSiteInfo } from '@/lib/site'
 
 const vazirmatn = Vazirmatn({
@@ -28,13 +29,18 @@ export async function generateMetadata() {
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
-  const siteInfo = await getSiteInfo()
+  const [siteInfo, cities] = await Promise.all([getSiteInfo(), getCities()])
 
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
       <body className="flex min-h-dvh flex-col">
         <DirectionProvider dir="rtl">
-          <Header siteName={siteInfo.siteName} logo={siteInfo.logo} items={siteInfo.navLinks} />
+          <Header
+            siteName={siteInfo.siteName}
+            logo={siteInfo.logo}
+            items={siteInfo.navLinks}
+            cities={cities}
+          />
 
           <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
             {children}

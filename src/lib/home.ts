@@ -5,12 +5,13 @@ import { getPayload } from 'payload'
 export type HomeContent = {
   hero: Home['hero']
   stats: Home['stats']
+  whyUs: Home['whyUs']
   popularServices: Home['popularServices']
 }
 
 /**
- * Loads the content for the homepage (hero, stats, popular services) from the
- * `home` global. Uses depth 1 so relationships/media are populated for render.
+ * Loads the content for the homepage (hero, stats, why-us, popular services)
+ * from the `home` global. Uses depth 1 so relationships/media are populated.
  */
 export async function getHomeContent(): Promise<HomeContent> {
   const payload = await getPayload({ config })
@@ -22,6 +23,7 @@ export async function getHomeContent(): Promise<HomeContent> {
 
   const hero = home.hero
   const stats = home.stats
+  const whyUs = home.whyUs
 
   // Only show active catalog services.
   const popularServices = (home.popularServices ?? []).filter((service) => {
@@ -32,6 +34,7 @@ export async function getHomeContent(): Promise<HomeContent> {
   return {
     hero,
     stats,
+    whyUs,
     popularServices,
   }
 }

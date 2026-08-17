@@ -1,8 +1,8 @@
+import { Container } from '@/components/layout/Container'
+import type { Service } from '@/payload-types'
+import config from '@payload-config'
 import { Scissors } from 'lucide-react'
 import Image from 'next/image'
-import type { Service } from '@/payload-types'
-import { Container } from '@/components/layout/Container'
-import config from '@payload-config'
 import { getPayload } from 'payload'
 
 function getIconUrl(icon: Service['icon']) {
@@ -33,12 +33,12 @@ export default async function ServicesPage() {
           هنوز خدمتی ثبت نشده است.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {docs.map((service) => {
             const iconUrl = getIconUrl(service.icon)
 
             return (
-              <div key={service.id} className="border bg-background flex flex-col gap-4 rounded-2xl p-5">
+              <div key={service.id} className="border bg-background flex flex-col gap-4 rounded-2xl p-4">
                 <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden rounded-xl">
                   {iconUrl ? (
                     <Image

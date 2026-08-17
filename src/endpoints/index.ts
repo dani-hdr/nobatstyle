@@ -38,7 +38,6 @@ export const settingsPublicEndpoint: PayloadEndpoint = {
         otpEnabled: settings.auth?.otpEnabled ?? false,
       },
       hero: home.hero,
-      promo: home.promo,
     })
   },
 }

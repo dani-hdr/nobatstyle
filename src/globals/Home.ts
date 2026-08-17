@@ -2,8 +2,8 @@ import type { GlobalConfig } from 'payload'
 import { isAdmin } from '../access'
 
 /**
- * Admin-configurable promotional / landing content. Selection of featured and
- * popular items is done here by reference so the frontend only reads the API.
+ * Admin-configurable homepage content. Selection of popular services is done
+ * here by reference so the frontend only reads the API.
  */
 export const Home: GlobalConfig = {
   slug: 'home',
@@ -37,14 +37,22 @@ export const Home: GlobalConfig = {
       ],
     },
     {
-      type: 'group',
-      name: 'promo',
-      label: 'بنر تبلیغاتی',
+      name: 'whyUs',
+      type: 'array',
+      label: 'چرا ما؟',
+      labels: { singular: 'دلیل', plural: 'دلایل' },
+      admin: {
+        description: 'دلایلی که چرا مشتریان باید از ما استفاده کنند.',
+      },
       fields: [
-        { name: 'title', type: 'text', label: 'عنوان' },
-        { name: 'body', type: 'textarea', label: 'متن' },
-        { name: 'image', type: 'upload', relationTo: 'media', label: 'تصویر' },
-        { name: 'link', type: 'text', label: 'لینک' },
+        { name: 'title', type: 'text', required: true, label: 'عنوان' },
+        {
+          name: 'icon',
+          type: 'upload',
+          relationTo: 'media',
+          label: 'آیکون',
+        },
+        { name: 'description', type: 'textarea', label: 'توضیحات' },
       ],
     },
     {

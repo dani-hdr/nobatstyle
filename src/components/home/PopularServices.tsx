@@ -2,9 +2,9 @@ import { Scissors } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-import type { Home, Service } from '@/payload-types'
-import { Button } from '@/components/ui/button'
 import { Container } from '@/components/layout/Container'
+import { Button } from '@/components/ui/button'
+import type { Home, Service } from '@/payload-types'
 
 function isService(value: string | Service): value is Service {
   return typeof value !== 'string'
@@ -34,14 +34,14 @@ export function PopularServices({ services }: { services: Home['popularServices'
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((service) => {
             const iconUrl = getIconUrl(service.icon)
 
             return (
               <div
                 key={service.id}
-                className="border bg-background flex flex-col gap-4 rounded-2xl p-5"
+                className="border bg-background flex flex-col gap-4 rounded-2xl p-4"
               >
                 <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden rounded-xl">
                   {iconUrl ? (
@@ -60,9 +60,9 @@ export function PopularServices({ services }: { services: Home['popularServices'
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-lg font-semibold">{service.name}</h3>
+                  <h3 className="md:text-lg font-semibold">{service.name}</h3>
                   {service.description && (
-                    <p className="text-muted-foreground text-sm">{service.description}</p>
+                    <p className="text-muted-foreground text-xs md:text-sm">{service.description}</p>
                   )}
                 </div>
               </div>

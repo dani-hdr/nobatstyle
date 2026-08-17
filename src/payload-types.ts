@@ -872,12 +872,17 @@ export interface Home {
     citiesCount?: number | null;
     customersCount?: number | null;
   };
-  promo?: {
-    title?: string | null;
-    body?: string | null;
-    image?: (string | null) | Media;
-    link?: string | null;
-  };
+  /**
+   * دلایلی که چرا مشتریان باید از ما استفاده کنند.
+   */
+  whyUs?:
+    | {
+        title: string;
+        icon?: (string | null) | Media;
+        description?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * خدمات منتخب جهت نمایش در بخش محبوب
    */
@@ -948,13 +953,13 @@ export interface HomeSelect<T extends boolean = true> {
         citiesCount?: T;
         customersCount?: T;
       };
-  promo?:
+  whyUs?:
     | T
     | {
         title?: T;
-        body?: T;
-        image?: T;
-        link?: T;
+        icon?: T;
+        description?: T;
+        id?: T;
       };
   popularServices?: T;
   updatedAt?: T;

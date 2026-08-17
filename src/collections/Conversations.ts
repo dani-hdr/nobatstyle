@@ -16,7 +16,7 @@ export const Conversations: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'id',
-    group: 'پیام‌ها',
+    group: 'ارتباطات',
   },
   access: {
     read: ({ req }) => {

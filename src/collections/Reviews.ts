@@ -31,7 +31,7 @@ export const Reviews: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'id',
-    group: 'بازخورد',
+    group: 'آرایشگاه‌ها',
     defaultColumns: ['barber', 'customer', 'rating', 'status'],
   },
   access: {

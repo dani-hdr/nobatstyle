@@ -10,7 +10,7 @@ export const Notifications: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'title',
-    group: 'اعلان‌ها',
+    group: 'ارتباطات',
   },
   access: {
     read: ({ req }) => {

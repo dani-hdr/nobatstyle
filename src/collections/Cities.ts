@@ -10,7 +10,7 @@ export const Cities: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    group: 'جغرافیا',
+    group: 'پایه و رسانه',
     defaultColumns: ['name', 'province', 'slug', 'isActive'],
   },
   access: {

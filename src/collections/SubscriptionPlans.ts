@@ -13,7 +13,7 @@ export const SubscriptionPlans: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    group: 'اشتراک',
+    group: 'کاربران و اشتراک',
     defaultColumns: ['name', 'durationMonths', 'price', 'isActive'],
   },
   access: {

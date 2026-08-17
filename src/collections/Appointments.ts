@@ -16,7 +16,7 @@ export const Appointments: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'id',
-    group: 'رزرو',
+    group: 'آرایشگاه‌ها',
     defaultColumns: ['barber', 'service', 'fromDate', 'toDate', 'status', 'customer'],
   },
   access: {

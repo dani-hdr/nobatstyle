@@ -7,7 +7,7 @@ export const Media: CollectionConfig = {
     plural: 'رسانه‌ها',
   },
   admin: {
-    group: 'رسانه‌ها',
+    group: 'پایه و رسانه',
   },
   access: {
     read: () => true,

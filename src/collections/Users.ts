@@ -11,7 +11,7 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    group: 'کاربران',
+    group: 'کاربران و اشتراک',
   },
   auth: {
     tokenExpiration: 60 * 60 * 24 * 30,

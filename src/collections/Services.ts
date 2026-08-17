@@ -14,7 +14,7 @@ export const Services: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    group: 'خدمات',
+    group: 'آرایشگاه‌ها',
     defaultColumns: ['name', 'icon', 'isActive', 'createdAt'],
   },
   access: {

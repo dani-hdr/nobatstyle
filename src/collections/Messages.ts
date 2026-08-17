@@ -10,7 +10,7 @@ export const Messages: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'id',
-    group: 'پیام‌ها',
+    group: 'ارتباطات',
   },
   access: {
     // Messages are exposed through the participant-scoped conversation endpoint

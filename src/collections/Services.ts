@@ -1,7 +1,11 @@
 import type { CollectionConfig } from 'payload'
-import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
 
+/**
+ * Global service catalog created by admins. Barbers do not create services;
+ * they reference a catalog service and set their own appointment window via the
+ * `appointments` array on the `barbers` collection.
+ */
 export const Services: CollectionConfig = {
   slug: 'services',
   labels: {
@@ -11,35 +15,13 @@ export const Services: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: 'خدمات',
-    defaultColumns: ['name', 'barber', 'duration', 'price', 'isActive'],
+    defaultColumns: ['name', 'icon', 'isActive', 'createdAt'],
   },
   access: {
-    // Everyone can read active services; barbers/admins read all.
     read: () => true,
-    create: ({ req }) => {
-      const u = req.user
-      if (!u) return false
-      return isAdmin({ req }) || u.role === ROLES.BARBER
-    },
-    update: ({ req }) => {
-      const u = req.user
-      if (!u) return false
-      if (isAdmin({ req })) return true
-      // Barbers can only manage their own services.
-      if (u.role === ROLES.BARBER) {
-        return { barber: { equals: u.activeBarber } }
-      }
-      return false
-    },
-    delete: ({ req }) => {
-      const u = req.user
-      if (!u) return false
-      if (isAdmin({ req })) return true
-      if (u.role === ROLES.BARBER) {
-        return { barber: { equals: u.activeBarber } }
-      }
-      return false
-    },
+    create: isAdmin,
+    update: isAdmin,
+    delete: isAdmin,
   },
   fields: [
     {
@@ -54,44 +36,19 @@ export const Services: CollectionConfig = {
       label: 'توضیحات',
     },
     {
-      name: 'barber',
-      type: 'relationship',
-      relationTo: 'barbers',
-      required: true,
-      index: true,
-      label: 'آرایشگر',
+      name: 'icon',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'آیکون',
       admin: {
-        position: 'sidebar',
-        condition: (data, siblingData, { user }) => user?.role !== ROLES.BARBER,
-      },
-    },
-    {
-      name: 'price',
-      type: 'number',
-      required: true,
-      defaultValue: 0,
-      min: 0,
-      label: 'قیمت',
-      admin: {
-        position: 'sidebar',
-      },
-    },
-    {
-      name: 'duration',
-      type: 'number',
-      required: true,
-      defaultValue: 30,
-      min: 5,
-      label: 'مدت زمان',
-      admin: {
-        position: 'sidebar',
-        description: 'مدت زمان به دقیقه',
+        description: 'تصویر / آیکون خدمت',
       },
     },
     {
       name: 'isActive',
       type: 'checkbox',
       defaultValue: true,
+      index: true,
       label: 'فعال',
       admin: {
         position: 'sidebar',

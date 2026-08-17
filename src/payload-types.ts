@@ -74,7 +74,6 @@ export interface Config {
     services: Service;
     appointments: Appointment;
     reviews: Review;
-    availabilityExceptions: AvailabilityException;
     portfolio: Portfolio;
     conversations: Conversation;
     messages: Message;
@@ -85,7 +84,11 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    barbers: {
+      appointments: 'appointments';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -94,7 +97,6 @@ export interface Config {
     services: ServicesSelect<false> | ServicesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
-    availabilityExceptions: AvailabilityExceptionsSelect<false> | AvailabilityExceptionsSelect<true>;
     portfolio: PortfolioSelect<false> | PortfolioSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
@@ -231,6 +233,18 @@ export interface Barber {
   rating?: number | null;
   reviewCount?: number | null;
   /**
+   * وقت‌هایی که این آرایشگر در یک بازه زمانی مشخص ارائه می‌دهد.
+   */
+  appointments?: {
+    docs?: (string | Appointment)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
+   * خدماتی که این آرایشگر ارائه می‌دهد (از کاتالوگ ادمین انتخاب می‌شود).
+   */
+  services?: (string | Service)[] | null;
+  /**
    * ساعات کاری تکراری هفتگی. هر روز شامل جهت ساعات کاری است.
    */
   workingHours?:
@@ -300,52 +314,32 @@ export interface City {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments".
+ */
+export interface Appointment {
+  id: string;
+  barber?: (string | null) | Barber;
+  service?: (string | null) | Service;
+  fromDate: string;
+  toDate: string;
+  customer?: (string | null) | User;
+  status: 'available' | 'reserved' | 'cancelled';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "services".
  */
 export interface Service {
   id: string;
   name: string;
   description?: string | null;
-  barber?: (string | null) | Barber;
-  price: number;
   /**
-   * مدت زمان به دقیقه
+   * تصویر / آیکون خدمت
    */
-  duration: number;
+  icon?: (string | null) | Media;
   isActive?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "appointments".
- */
-export interface Appointment {
-  id: string;
-  barber: string | Barber;
-  customer: string | User;
-  service?: (string | null) | Service;
-  /**
-   * عکس فوری از نام خدمت در زمان رزرو
-   */
-  serviceName?: string | null;
-  /**
-   * عکس فوری از قیمت در زمان رزرو
-   */
-  price?: number | null;
-  /**
-   * مدت به دقیقه
-   */
-  duration?: number | null;
-  date: string;
-  /**
-   * ساعت شروع، e.g. 18:30
-   */
-  startTime: string;
-  endTime?: string | null;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  note?: string | null;
-  cancelReason?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -357,30 +351,9 @@ export interface Review {
   id: string;
   barber: string | Barber;
   customer: string | User;
-  appointment?: (string | null) | Appointment;
   rating: number;
   comment?: string | null;
   status: 'pending' | 'active' | 'rejected';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "availabilityExceptions".
- */
-export interface AvailabilityException {
-  id: string;
-  barber: string | Barber;
-  label?: string | null;
-  date: string;
-  allDay?: boolean | null;
-  slots?:
-    | {
-        start: string;
-        end: string;
-        id?: string | null;
-      }[]
-    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -521,10 +494,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'reviews';
         value: string | Review;
-      } | null)
-    | ({
-        relationTo: 'availabilityExceptions';
-        value: string | AvailabilityException;
       } | null)
     | ({
         relationTo: 'portfolio';
@@ -668,6 +637,8 @@ export interface BarbersSelect<T extends boolean = true> {
   isFeatured?: T;
   rating?: T;
   reviewCount?: T;
+  appointments?: T;
+  services?: T;
   workingHours?:
     | T
     | {
@@ -692,9 +663,7 @@ export interface BarbersSelect<T extends boolean = true> {
 export interface ServicesSelect<T extends boolean = true> {
   name?: T;
   description?: T;
-  barber?: T;
-  price?: T;
-  duration?: T;
+  icon?: T;
   isActive?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -705,17 +674,11 @@ export interface ServicesSelect<T extends boolean = true> {
  */
 export interface AppointmentsSelect<T extends boolean = true> {
   barber?: T;
-  customer?: T;
   service?: T;
-  serviceName?: T;
-  price?: T;
-  duration?: T;
-  date?: T;
-  startTime?: T;
-  endTime?: T;
+  fromDate?: T;
+  toDate?: T;
+  customer?: T;
   status?: T;
-  note?: T;
-  cancelReason?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -726,29 +689,9 @@ export interface AppointmentsSelect<T extends boolean = true> {
 export interface ReviewsSelect<T extends boolean = true> {
   barber?: T;
   customer?: T;
-  appointment?: T;
   rating?: T;
   comment?: T;
   status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "availabilityExceptions_select".
- */
-export interface AvailabilityExceptionsSelect<T extends boolean = true> {
-  barber?: T;
-  label?: T;
-  date?: T;
-  allDay?: T;
-  slots?:
-    | T
-    | {
-        start?: T;
-        end?: T;
-        id?: T;
-      };
   updatedAt?: T;
   createdAt?: T;
 }

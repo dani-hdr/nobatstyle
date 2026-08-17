@@ -14,7 +14,6 @@ import { Barbers } from './collections/Barbers'
 import { Services } from './collections/Services'
 import { Appointments } from './collections/Appointments'
 import { Reviews } from './collections/Reviews'
-import { AvailabilityExceptions } from './collections/AvailabilityExceptions'
 import { Portfolio } from './collections/Portfolio'
 import { Conversations } from './collections/Conversations'
 import { Messages } from './collections/Messages'
@@ -49,7 +48,6 @@ export default buildConfig({
     Services,
     Appointments,
     Reviews,
-    AvailabilityExceptions,
     Portfolio,
     Conversations,
     Messages,

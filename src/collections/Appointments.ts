@@ -1,9 +1,13 @@
 import type { CollectionConfig, Where } from 'payload'
 import { APIError } from 'payload'
-import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
-import { isSlotAvailable, toHHMM, toMinutes } from '../utils/availability'
+import { ROLES } from '../utils/constants'
 
+/**
+ * Appointment windows a barber offers. Each window references a catalog
+ * service and a from/to datetime range. Customers reserve an available window
+ * (status === 'available') via the `reserve` endpoint.
+ */
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
   labels: {
@@ -13,70 +17,92 @@ export const Appointments: CollectionConfig = {
   admin: {
     useAsTitle: 'id',
     group: 'رزرو',
-    defaultColumns: ['barber', 'customer', 'date', 'startTime', 'serviceName', 'status'],
+    defaultColumns: ['barber', 'service', 'fromDate', 'toDate', 'status', 'customer'],
   },
   access: {
+    // Public reads available windows; barbers/admins read everything.
     read: ({ req }) => {
-      const u = req.user
-      if (!u) return false
+      if (!req.user) return { status: { equals: 'available' } }
       if (isAdmin({ req })) return true
-      const where: Where = u.role === ROLES.BARBER ? { barber: { equals: String(u.activeBarber) } } : { customer: { equals: u.id } }
+      if (req.user.role === ROLES.BARBER) {
+        const where: Where = { barber: { equals: String(req.user.activeBarber) } }
+        return where
+      }
+      const where: Where = { status: { equals: 'available' } }
       return where
     },
     create: ({ req }) => {
-      // Any logged-in user (customer, and barbers booking elsewhere) may book.
-      return Boolean(req.user)
+      if (!req.user) return false
+      return isAdmin({ req }) || req.user.role === ROLES.BARBER
     },
     update: ({ req }) => {
       const u = req.user
       if (!u) return false
       if (isAdmin({ req })) return true
-      const where: Where = u.role === ROLES.BARBER ? { barber: { equals: String(u.activeBarber) } } : { customer: { equals: u.id } }
-      return where
+      if (u.role === ROLES.BARBER) {
+        return { barber: { equals: String(u.activeBarber) } }
+      }
+      return false
     },
     delete: ({ req }) => {
       const u = req.user
       if (!u) return false
       if (isAdmin({ req })) return true
-      const where: Where = u.role === ROLES.BARBER ? { barber: { equals: String(u.activeBarber) } } : { customer: { equals: u.id } }
-      return where
+      if (u.role === ROLES.BARBER) {
+        return { barber: { equals: String(u.activeBarber) } }
+      }
+      return false
     },
   },
+  endpoints: [
+    {
+      // POST /api/appointments/:id/reserve — reserve an available window.
+      path: '/:id/reserve',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) throw new APIError('Unauthorized', 401)
+        const id = String(req.routeParams?.['id'])
+
+        const existing = await req.payload.findByID({
+          collection: 'appointments',
+          id,
+          depth: 0,
+          overrideAccess: false,
+        })
+        if (!existing) throw new APIError('Appointment not found', 404)
+        if (existing.status !== 'available') {
+          throw new APIError('این وقت دیگر در دسترس نیست', 409)
+        }
+
+        const updated = await req.payload.update({
+          collection: 'appointments',
+          id,
+          data: {
+            customer: req.user.id,
+            status: 'reserved',
+          },
+          overrideAccess: false,
+          req,
+        })
+
+        return Response.json(updated)
+      },
+    },
+  ],
   hooks: {
     beforeChange: [
       async ({ data, operation, req }) => {
-        // Cancelling frees the slot automatically via availability re-validation.
-        if (data.status === 'cancelled') return data
-
-        let duration = data.duration as number | undefined
-        let price = data.price as number | undefined
-        let serviceName = data.serviceName as string | undefined
-
-        if (data.service && !duration) {
-          const svc = await req.payload.findByID({
-            collection: 'services',
-            id: data.service as string,
-            depth: 0,
-          })
-          if (svc) {
-            duration = svc.duration
-            price = svc.price
-            serviceName = svc.name
-          }
+        if (operation === 'create' && req.user?.role === ROLES.BARBER && !data.barber) {
+          data.barber = String(req.user.activeBarber)
         }
-
-        const startMins = toMinutes(data.startTime as string)
-        data.duration = duration || 0
-        data.price = price || 0
-        data.serviceName = serviceName || ''
-        data.endTime = toHHMM(startMins + data.duration)
-
-        // Re-validate availability at submit time so concurrent bookings can't overlap.
-        if (operation === 'create' && data.barber && data.date && data.startTime) {
-          const bookingDate = new Date(`${String(data.date).slice(0, 10)}T00:00:00`)
-          const ok = await isSlotAvailable(req, data.barber as string, bookingDate, data.startTime as string, data.duration)
-          if (!ok) {
-            throw new APIError('این بازه زمانی دیگر در دسترس نیست', 409)
+        if (data.status && data.status !== 'available' && !data.customer) {
+          throw new APIError('برای رزرو این وقت باید مشتری مشخص شود', 400)
+        }
+        if (data.fromDate && data.toDate) {
+          const from = new Date(data.fromDate).getTime()
+          const to = new Date(data.toDate).getTime()
+          if (to <= from) {
+            throw new APIError('«تا» باید بعد از «از» باشد', 400)
           }
         }
         return data
@@ -91,100 +117,86 @@ export const Appointments: CollectionConfig = {
       required: true,
       index: true,
       label: 'آرایشگر',
-    },
-    {
-      name: 'customer',
-      type: 'relationship',
-      relationTo: 'users',
-      required: true,
-      index: true,
-      label: 'مشتری',
+      admin: {
+        condition: (data, siblingData, { user }) => user?.role !== ROLES.BARBER,
+      },
     },
     {
       name: 'service',
       type: 'relationship',
       relationTo: 'services',
+      required: true,
+      index: true,
       label: 'خدمت',
+      filterOptions: async ({ data, req }) => {
+        const active: Where = { isActive: { equals: true } }
+        const barberId = data?.barber
+        if (!barberId) return active
+        const barber = await req.payload.findByID({
+          collection: 'barbers',
+          id: String(barberId),
+          depth: 0,
+          overrideAccess: false,
+        })
+        const offered = (barber?.services ?? []).map((s) => String(s))
+        if (offered.length === 0) return false
+        return { and: [active, { id: { in: offered } }] }
+      },
       admin: {
-        position: 'sidebar',
+        condition: (data) => Boolean(data?.barber),
       },
     },
     {
-      name: 'serviceName',
-      type: 'text',
-      label: 'نام خدمت',
-      admin: { readOnly: true, description: 'عکس فوری از نام خدمت در زمان رزرو' },
-    },
-    {
-      name: 'price',
-      type: 'number',
-      label: 'قیمت',
-      admin: { readOnly: true, description: 'عکس فوری از قیمت در زمان رزرو' },
-    },
-    {
-      name: 'duration',
-      type: 'number',
-      label: 'مدت (دقیقه)',
-      admin: { readOnly: true, description: 'مدت به دقیقه' },
-    },
-    {
-      name: 'date',
+      name: 'fromDate',
       type: 'date',
       required: true,
       index: true,
-      label: 'تاریخ',
+      label: 'از (تاریخ و ساعت)',
       admin: {
-        position: 'sidebar',
-        date: { pickerAppearance: 'dayOnly' },
+        date: { pickerAppearance: 'dayAndTime' },
         components: {
-          Field: '/components/fields/PersianDateField',
+          Field: '/components/fields/PersianDateField#PersianDateTimeField',
         },
       },
     },
     {
-      name: 'startTime',
-      type: 'text',
+      name: 'toDate',
+      type: 'date',
       required: true,
       index: true,
-      label: 'ساعت شروع',
+      label: 'تا (تاریخ و ساعت)',
       admin: {
-        position: 'sidebar',
-        description: 'ساعت شروع، e.g. 18:30',
+        date: { pickerAppearance: 'dayAndTime' },
+        components: {
+          Field: '/components/fields/PersianDateField#PersianDateTimeField',
+        },
       },
     },
     {
-      name: 'endTime',
-      type: 'text',
-      label: 'ساعت پایان',
-      admin: { readOnly: true, position: 'sidebar' },
+      name: 'customer',
+      type: 'relationship',
+      relationTo: 'users',
+      index: true,
+      label: 'مشتری (رزرو شده)',
+      admin: {
+        position: 'sidebar',
+      },
     },
     {
       name: 'status',
       type: 'select',
       required: true,
-      defaultValue: 'pending',
+      defaultValue: 'available',
       index: true,
       label: 'وضعیت',
       admin: {
         position: 'sidebar',
       },
       options: [
-        { label: 'در انتظار تأیید', value: 'pending' },
-        { label: 'تأیید شده', value: 'confirmed' },
-        { label: 'انجام شده', value: 'completed' },
+        { label: 'آزاد', value: 'available' },
+        { label: 'رزرو شده', value: 'reserved' },
         { label: 'لغو شده', value: 'cancelled' },
       ],
-    },
-    {
-      name: 'note',
-      type: 'textarea',
-      label: 'یادداشت',
-    },
-    {
-      name: 'cancelReason',
-      type: 'textarea',
-      label: 'دلیل لغو',
-      admin: { position: 'sidebar' },
     },
   ],
 }

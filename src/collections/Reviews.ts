@@ -76,13 +76,6 @@ export const Reviews: CollectionConfig = {
       label: 'مشتری',
     },
     {
-      name: 'appointment',
-      type: 'relationship',
-      relationTo: 'appointments',
-      label: 'رزرو',
-      admin: { position: 'sidebar' },
-    },
-    {
       name: 'rating',
       type: 'number',
       required: true,

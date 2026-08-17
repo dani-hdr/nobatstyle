@@ -1,4 +1,4 @@
-import type { Endpoint as PayloadEndpoint } from 'payload'
+import type { Endpoint as PayloadEndpoint, Where } from 'payload'
 import { APIError } from 'payload'
 import { ROLES } from '../utils/constants'
 import { STATUS_META } from '../utils/constants'
@@ -65,31 +65,24 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
     dashboardAuth(req, [ROLES.CUSTOMER])
     const me = req.user!.id
 
-    const byStatus = async (status?: string, limit = 20) => {
-      const where: Record<string, any> = { customer: { equals: me } }
+    const findMy = async (status?: string) => {
+      const where: Where = { customer: { equals: me } }
       if (status) where.status = { equals: status }
       const res = await req.payload.find({
         collection: 'appointments',
         depth: 1,
         where,
-        sort: status === 'upcoming' ? 'date' : '-date',
-        limit,
+        sort: status === 'cancelled' ? '-fromDate' : 'fromDate',
+        limit: 50,
         overrideAccess: false,
       })
       return res.docs
     }
 
-    const [upcoming, past, cancelled, notifications] = await Promise.all([
-      req.payload.find({
-        collection: 'appointments',
-        depth: 1,
-        where: { and: [{ customer: { equals: me } }, { status: { not_equals: 'cancelled' } }] },
-        sort: 'date',
-        limit: 10,
-        overrideAccess: false,
-      }),
-      byStatus(),
-      byStatus('cancelled'),
+    const [appointments, past, cancelled, notifications] = await Promise.all([
+      findMy(),
+      findMy(),
+      findMy('cancelled'),
       req.payload.find({
         collection: 'notifications',
         depth: 0,
@@ -101,8 +94,8 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
     ])
 
     return Response.json({
-      nextAppointment: upcoming.docs[0] ?? null,
-      appointments: upcoming.docs,
+      nextAppointment: appointments.filter((a) => a.status === 'reserved')[0] ?? null,
+      appointments,
       pastAppointments: past,
       cancelledAppointments: cancelled,
       notifications: notifications.docs,
@@ -123,27 +116,14 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
     const barberId = String(req.user!.activeBarber)
     if (!barberId) throw new APIError('Barber profile not found', 404)
 
-    const apptWhere = { barber: { equals: barberId } }
-    const [newRequests, upcoming, completed, reviews, notifications, barber] = await Promise.all([
+    const [barber, appointmentsRes, reviews, notifications] = await Promise.all([
+      req.payload.findByID({ collection: 'barbers', id: barberId, depth: 1, overrideAccess: false }),
       req.payload.find({
         collection: 'appointments',
         depth: 1,
-        where: { ...apptWhere, status: { equals: 'pending' } },
-        sort: 'date',
-        limit: 20,
-        overrideAccess: false,
-      }),
-      req.payload.find({
-        collection: 'appointments',
-        depth: 1,
-        where: { and: [{ barber: { equals: barberId } }, { status: { not_equals: 'cancelled' } }] },
-        sort: 'date',
-        limit: 50,
-        overrideAccess: false,
-      }),
-      req.payload.count({
-        collection: 'appointments',
-        where: { ...apptWhere, status: { equals: 'completed' } },
+        where: { barber: { equals: barberId } },
+        sort: 'fromDate',
+        limit: 200,
         overrideAccess: false,
       }),
       req.payload.find({
@@ -162,17 +142,20 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         limit: 20,
         overrideAccess: false,
       }),
-      req.payload.findByID({ collection: 'barbers', id: barberId, depth: 1, overrideAccess: false }),
     ])
+
+    const allAppointments = appointmentsRes.docs
 
     return Response.json({
       barber,
-      newRequests: newRequests.docs,
-      appointments: upcoming.docs,
+      appointments: allAppointments,
+      newRequests: allAppointments.filter((a) => a.status === 'reserved'),
       reviews: reviews.docs,
       notifications: notifications.docs,
       statistics: {
-        completedCount: completed.totalDocs,
+        completedCount: allAppointments.filter(
+          (a) => a.status === 'reserved' && a.toDate && new Date(a.toDate).getTime() < Date.now(),
+        ).length,
         rating: barber?.rating ?? 0,
         reviewCount: barber?.reviewCount ?? 0,
       },

@@ -1,7 +1,6 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
-import { getAvailableSlots, getWorkingIntervals } from '../utils/availability'
 
 /**
  * Central barber profile. Rating & reviewCount are denormalized and kept in
@@ -40,37 +39,46 @@ export const Barbers: CollectionConfig = {
   },
   endpoints: [
     {
-      // GET /api/barbers/:id/availability?date=YYYY-MM-DD&service=:serviceId
-      path: '/:id/availability',
+      // GET /api/barbers/:id/appointments — the barber's appointment windows,
+      // filtered to the requested date where fromDate falls on it.
+      path: '/:id/appointments',
       method: 'get',
       handler: async (req) => {
         const id = String(req.routeParams?.['id'])
         const url = new URL(req.url || '')
         const dateParam = url.searchParams.get('date')
-        const serviceId = url.searchParams.get('service')
 
-        if (!dateParam) {
-          return Response.json({ error: 'date query param is required (YYYY-MM-DD)' }, { status: 400 })
+        const where: Where = { barber: { equals: id } }
+        if (dateParam) {
+          const from = new Date(`${dateParam}T00:00:00.000Z`)
+          const to = new Date(from)
+          to.setDate(to.getDate() + 1)
+          where.fromDate = {
+            greater_than_equal: from.toISOString(),
+            less_than: to.toISOString(),
+          }
         }
 
-        let duration = 30
-        if (serviceId) {
-          const svc = await req.payload.findByID({ collection: 'services', id: serviceId, depth: 0 })
-          duration = svc?.duration ?? 30
-        }
+        const res = await req.payload.find({
+          collection: 'appointments',
+          depth: 1,
+          where,
+          sort: 'fromDate',
+          limit: 200,
+          overrideAccess: false,
+        })
 
-        const date = new Date(`${dateParam}T00:00:00`)
-        const [slots, workingHours] = await Promise.all([
-          getAvailableSlots(req, id, date, duration),
-          getWorkingIntervals(req, id, date).then((intervals) =>
-            intervals.map((i) => ({
-              start: `${String(Math.floor(i.start / 60)).padStart(2, '0')}:${String(i.start % 60).padStart(2, '0')}`,
-              end: `${String(Math.floor(i.end / 60)).padStart(2, '0')}:${String(i.end % 60).padStart(2, '0')}`,
-            })),
-          ),
-        ])
-
-        return Response.json({ date: dateParam, duration, slots, workingHours })
+        return Response.json({
+          date: dateParam ?? null,
+          appointments: res.docs.map((a) => ({
+            id: a.id,
+            service: a.service,
+            fromDate: a.fromDate,
+            toDate: a.toDate,
+            status: a.status,
+            available: a.status === 'available',
+          })),
+        })
       },
     },
     {
@@ -235,6 +243,31 @@ export const Barbers: CollectionConfig = {
       admin: {
         readOnly: true,
         position: 'sidebar',
+      },
+    },
+    {
+      name: 'appointments',
+      type: 'join',
+      collection: 'appointments',
+      on: 'barber',
+      hasMany: true,
+      label: 'رزروهای زمانی',
+      admin: {
+        description: 'وقت‌هایی که این آرایشگر در یک بازه زمانی مشخص ارائه می‌دهد.',
+      },
+    },
+    {
+      name: 'services',
+      type: 'relationship',
+      relationTo: 'services',
+      hasMany: true,
+      index: true,
+      label: 'خدمات ارائه‌شده',
+      admin: {
+        description: 'خدماتی که این آرایشگر ارائه می‌دهد (از کاتالوگ ادمین انتخاب می‌شود).',
+      },
+      filterOptions: {
+        isActive: { equals: true },
       },
     },
     {

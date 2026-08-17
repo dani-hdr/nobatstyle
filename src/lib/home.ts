@@ -23,14 +23,10 @@ export async function getHomeContent(): Promise<HomeContent> {
   const hero = home.hero
   const stats = home.stats
 
-  // Popular services are keyed by barber; only show active ones that belong
-  // to active barbers.
+  // Only show active catalog services.
   const popularServices = (home.popularServices ?? []).filter((service) => {
     if (typeof service === 'string') return true
-    if (service.isActive === false) return false
-    const barber = service.barber
-    if (typeof barber === 'object' && barber && barber.isActive === false) return false
-    return true
+    return service.isActive !== false
   })
 
   return {

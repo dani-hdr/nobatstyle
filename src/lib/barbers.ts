@@ -1,6 +1,6 @@
 import type { Where } from 'payload'
 
-import type { Barber } from '@/payload-types'
+import type { Barber, City } from '@/payload-types'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
@@ -10,33 +10,46 @@ export type ListBarber = {
   shopSlug?: string | null
   rating?: number | null
   reviewCount?: number | null
+  createdAt: string
   avatar?: ({ url?: string | null; alt?: string | null } | string | null) | null
-  city?: ({ id: string; name: string } | string | null) | null
+  city?: ({ id: string; name: string; province?: City['province'] | null } | string | null) | null
+}
+
+export const BARBERS_PAGE_SIZE = 9
+
+export type BarberFilters = {
+  q?: string
+  city?: string
+  province?: string
+  sort?: 'rating' | 'newest'
+  page?: number
 }
 
 /**
- * Queries barbers for the listing page, optionally filtered by a search query
- * (shop name) and a city id. Returns active barbers.
+ * Queries barbers for the listing page with optional filters (search query,
+ * city, province, sort) and pagination. Returns active barbers only.
  */
 export async function getBarbers({
   q,
   city,
-}: {
-  q?: string
-  city?: string
-}): Promise<{ docs: ListBarber[]; total: number }> {
+  province,
+  sort = 'rating',
+  page = 1,
+}: BarberFilters): Promise<{ docs: ListBarber[]; total: number; totalPages: number }> {
   const payload = await getPayload({ config })
 
   const and: Where[] = [{ isActive: { equals: true } }]
   if (q?.trim()) and.push({ shopName: { contains: q.trim() } })
   if (city) and.push({ city: { equals: city } })
+  if (province) and.push({ 'city.province': { equals: province } })
   const where: Where = and.length > 1 ? { and } : and[0]
 
-  const { docs, totalDocs } = await payload.find({
+  const { docs, totalDocs, totalPages } = await payload.find({
     collection: 'barbers',
     where,
-    sort: '-rating',
-    limit: 50,
+    sort: sort === 'newest' ? '-createdAt' : '-rating',
+    limit: BARBERS_PAGE_SIZE,
+    page,
     depth: 1,
   })
 
@@ -47,9 +60,11 @@ export async function getBarbers({
       shopSlug: d.shopSlug,
       rating: d.rating,
       reviewCount: d.reviewCount,
+      createdAt: d.createdAt,
       avatar: d.avatar,
       city: d.city,
     })),
     total: totalDocs,
+    totalPages,
   }
 }

@@ -5,9 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
 
-import { useMediaQuery } from '@/hooks/use-media-query'
-import { getStoredCityId, setStoredCityId } from '@/lib/city-storage'
-import type { ProvinceGroup, SearchCity } from '@/lib/barber-search'
+import { CityAutocomplete } from '@/components/home/CityAutocomplete'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -23,21 +21,15 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group'
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { useMediaQuery } from '@/hooks/use-media-query'
+import type { ProvinceGroup, SearchCity } from '@/lib/barber-search'
+import { getStoredCityId, setStoredCityId } from '@/lib/city-storage'
 
 type ResultBarber = {
   id: string
@@ -208,7 +200,7 @@ function BarberSearchContent({
     <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 md:p-0">
       {/* Search field + city filter */}
       <div className="flex flex-col gap-2 sm:flex-row">
-        <InputGroup className="h-11 flex-1 rounded-full">
+        <InputGroup className="flex-1">
           <InputGroupInput
             type="search"
             value={query}
@@ -223,28 +215,12 @@ function BarberSearchContent({
           </InputGroupAddon>
         </InputGroup>
 
-        <Select value={cityId || '__all__'} onValueChange={changeCity}>
-          <SelectTrigger
-            size="sm"
-            aria-label="فیلتر بر اساس شهر"
-            className="h-11 w-full shrink-0 sm:w-56"
-          >
-            <SelectValue placeholder="فیلتر شهر" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[60dvh]">
-            <SelectItem value="__all__">همه شهرها</SelectItem>
-            {cities.map((group) => (
-              <SelectGroup key={group.province}>
-                <SelectLabel>{group.label}</SelectLabel>
-                {group.cities.map((city) => (
-                  <SelectItem key={city.id} value={city.id}>
-                    {city.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
+        <CityAutocomplete
+          cities={cities}
+          value={cityId}
+          onValueChange={changeCity}
+          placeholder="فیلتر شهر"
+        />
       </div>
 
       {/* No filter yet */}
@@ -272,7 +248,7 @@ function BarberSearchContent({
               </p>
             ) : (
               <ul className="divide-y">
-                {results.map((barber) => (
+                {results.slice(0, 2).map((barber) => (
                   <li key={barber.id}>
                     <Link
                       href={`/barbers/${barber.shopSlug || barber.id}`}

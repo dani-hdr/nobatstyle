@@ -15,20 +15,22 @@ import {
 } from '@/components/ui/select'
 import type { ProvinceGroup } from '@/lib/barber-search'
 
-const SORT_OPTIONS = [
-  { value: 'rating', label: 'محبوب‌ترین' },
-  { value: 'newest', label: 'جدیدترین' },
-] as const
+export type FilterService = { id: string; name: string }
 
-export function BarberFilters({ cities }: { cities: ProvinceGroup[] }) {
+export function BarberFilters({
+  cities,
+  services,
+}: {
+  cities: ProvinceGroup[]
+  services: FilterService[]
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const q = searchParams.get('q') ?? ''
   const city = searchParams.get('city') ?? ''
-  const province = searchParams.get('province') ?? ''
-  const sort = searchParams.get('sort') ?? 'rating'
+  const service = searchParams.get('service') ?? ''
 
   const [query, setQuery] = React.useState(q)
 
@@ -60,23 +62,9 @@ export function BarberFilters({ cities }: { cities: ProvinceGroup[] }) {
     return () => clearTimeout(t)
   }, [debouncedQuery, q, push])
 
-  const handleProvince = (v: string) => {
-    const params = new URLSearchParams(searchParams.toString())
-    if (v === '__all__') {
-      params.delete('province')
-      params.delete('city')
-    } else {
-      params.set('province', v)
-      params.delete('city')
-    }
-    params.delete('page')
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
-  }
-
   return (
     <div className="mb-8 flex flex-col gap-3 lg:flex-row lg:items-center">
-      <InputGroup className="flex-1">
+      <InputGroup className="flex-1 md:max-w-sm">
         <InputGroupInput
           type="search"
           value={query}
@@ -89,39 +77,23 @@ export function BarberFilters({ cities }: { cities: ProvinceGroup[] }) {
         </InputGroupAddon>
       </InputGroup>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Select value={province || '__all__'} onValueChange={handleProvince}>
-          <SelectTrigger size="sm" aria-label="فیلتر استان" className="h-11 w-full sm:w-44">
-            <SelectValue placeholder="همه استان‌ها" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">همه استان‌ها</SelectItem>
-            {cities.map((group) => (
-              <SelectItem key={group.province} value={group.province}>
-                {group.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
+      <div className="grid grid-cols-2 gap-3 md:flex items-center">
         <CityAutocomplete
-          cities={province ? cities.filter((g) => g.province === province) : cities}
+          cities={cities}
           value={city}
           onValueChange={(v) => push({ city: v })}
           placeholder="همه شهرها"
         />
 
-        <Select
-          value={sort}
-          onValueChange={(v) => push({ sort: v })}
-        >
-          <SelectTrigger size="sm" aria-label="مرتب‌سازی" className="h-11 w-full sm:w-36">
-            <SelectValue placeholder="مرتب‌سازی" />
+        <Select value={service || '__all__'} onValueChange={(v) => push({ service: v === '__all__' ? '' : v })}>
+          <SelectTrigger aria-label="فیلتر خدمت" className="w-full sm:w-44">
+            <SelectValue placeholder="همه خدمات" />
           </SelectTrigger>
           <SelectContent>
-            {SORT_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+            <SelectItem value="__all__">همه خدمات</SelectItem>
+            {services.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
               </SelectItem>
             ))}
           </SelectContent>

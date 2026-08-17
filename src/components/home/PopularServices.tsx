@@ -39,9 +39,10 @@ export function PopularServices({ services }: { services: Home['popularServices'
             const iconUrl = getIconUrl(service.icon)
 
             return (
-              <div
+              <Link
                 key={service.id}
-                className="border bg-background flex flex-col gap-4 rounded-2xl p-4"
+                href={`/barbers?service=${service.id}`}
+                className="hover:bg-accent border bg-background flex flex-col gap-4 rounded-2xl p-4 transition-colors"
               >
                 <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden rounded-xl">
                   {iconUrl ? (
@@ -65,7 +66,7 @@ export function PopularServices({ services }: { services: Home['popularServices'
                     <p className="text-muted-foreground text-xs md:text-sm">{service.description}</p>
                   )}
                 </div>
-              </div>
+              </Link>
             )
           })}
         </div>

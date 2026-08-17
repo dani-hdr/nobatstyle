@@ -7,45 +7,42 @@ import { Pagination } from '@/components/barbers/Pagination'
 import { Container } from '@/components/layout/Container'
 import { getCities } from '@/lib/barber-search'
 import { getBarbers } from '@/lib/barbers'
+import config from '@payload-config'
+import { getPayload } from 'payload'
 
 export default async function BarbersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; city?: string; province?: string; sort?: string; page?: string }>
+  searchParams: Promise<{ q?: string; city?: string; service?: string; page?: string }>
 }) {
-  const [{ q, city, province, sort, page }, cities] = await Promise.all([
-    searchParams,
-    getCities(),
-  ])
+  const { q, city, service, page } = await searchParams
 
   const currentPage = Math.max(1, parseInt(page ?? '1', 10) || 1)
 
-  const { docs, total, totalPages } = await getBarbers({
-    q,
-    city,
-    province,
-    sort: sort === 'newest' ? 'newest' : 'rating',
-    page: currentPage,
-  })
+  const [barbers, cities, services] = await Promise.all([
+    getBarbers({ q, city, service, page: currentPage }),
+    getCities(),
+    payloadFindActiveServices(),
+  ])
+  const { docs, total, totalPages } = barbers
 
   const allCities = cities.flatMap((g) => g.cities)
   const matchedCity = city ? allCities.find((c) => c.id === city) : undefined
-  const matchedProvince = province ? cities.find((g) => g.province === province) : undefined
+  const matchedService = service ? services.find((s) => s.id === service) : undefined
 
-  const filterLabel = q || matchedCity?.name || matchedProvince?.label
+  const filterLabel = q || matchedCity?.name || matchedService?.name
 
   const buildPageHref = (p: number) => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
     if (city) params.set('city', city)
-    if (province) params.set('province', province)
-    if (sort && sort !== 'rating') params.set('sort', sort)
+    if (service) params.set('service', service)
     if (p > 1) params.set('page', String(p))
     const qs = params.toString()
     return qs ? `/barbers?${qs}` : '/barbers'
   }
 
-  const hasFilters = Boolean(q || city || province)
+  const hasFilters = Boolean(q || city || service)
 
   return (
     <Container className="py-10 md:py-14">
@@ -57,7 +54,7 @@ export default async function BarbersPage({
         </p>
       </div>
 
-      <BarberFilters cities={cities} />
+      <BarberFilters cities={cities} services={services} />
 
       {docs.length === 0 ? (
         <div className="border rounded-2xl p-12 text-center">
@@ -123,4 +120,16 @@ export default async function BarbersPage({
       />
     </Container>
   )
+}
+
+async function payloadFindActiveServices() {
+  const payload = await getPayload({ config })
+  const { docs } = await payload.find({
+    collection: 'services',
+    where: { isActive: { equals: true } },
+    sort: 'name',
+    limit: 1000,
+    depth: 0,
+  })
+  return docs.map((d) => ({ id: d.id, name: d.name }))
 }

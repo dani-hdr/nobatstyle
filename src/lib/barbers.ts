@@ -20,20 +20,18 @@ export const BARBERS_PAGE_SIZE = 9
 export type BarberFilters = {
   q?: string
   city?: string
-  province?: string
-  sort?: 'rating' | 'newest'
+  service?: string
   page?: number
 }
 
 /**
  * Queries barbers for the listing page with optional filters (search query,
- * city, province, sort) and pagination. Returns active barbers only.
+ * city, service) and pagination. Returns active barbers only, sorted by rating.
  */
 export async function getBarbers({
   q,
   city,
-  province,
-  sort = 'rating',
+  service,
   page = 1,
 }: BarberFilters): Promise<{ docs: ListBarber[]; total: number; totalPages: number }> {
   const payload = await getPayload({ config })
@@ -41,13 +39,13 @@ export async function getBarbers({
   const and: Where[] = [{ isActive: { equals: true } }]
   if (q?.trim()) and.push({ shopName: { contains: q.trim() } })
   if (city) and.push({ city: { equals: city } })
-  if (province) and.push({ 'city.province': { equals: province } })
+  if (service) and.push({ services: { equals: service } })
   const where: Where = and.length > 1 ? { and } : and[0]
 
   const { docs, totalDocs, totalPages } = await payload.find({
     collection: 'barbers',
     where,
-    sort: sort === 'newest' ? '-createdAt' : '-rating',
+    sort: '-rating',
     limit: BARBERS_PAGE_SIZE,
     page,
     depth: 1,

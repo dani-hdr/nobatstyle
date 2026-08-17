@@ -3,6 +3,7 @@ import type { Service } from '@/payload-types'
 import config from '@payload-config'
 import { Scissors } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { getPayload } from 'payload'
 
 function getIconUrl(icon: Service['icon']) {
@@ -38,7 +39,11 @@ export default async function ServicesPage() {
             const iconUrl = getIconUrl(service.icon)
 
             return (
-              <div key={service.id} className="border bg-background flex flex-col gap-4 rounded-2xl p-4">
+              <Link
+                key={service.id}
+                href={`/barbers?service=${service.id}`}
+                className="hover:bg-accent border bg-background flex flex-col gap-4 rounded-2xl p-4 transition-colors"
+              >
                 <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden rounded-xl">
                   {iconUrl ? (
                     <Image
@@ -61,7 +66,7 @@ export default async function ServicesPage() {
                     <p className="text-muted-foreground text-sm">{service.description}</p>
                   )}
                 </div>
-              </div>
+              </Link>
             )
           })}
         </div>

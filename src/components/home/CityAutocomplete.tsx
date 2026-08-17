@@ -1,15 +1,15 @@
 'use client'
 
-import { Check, MapPin, Search } from 'lucide-react'
+import { Check, MapPin } from 'lucide-react'
 import * as React from 'react'
 
-import type { ProvinceGroup, SearchCity } from '@/lib/barber-search'
 import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import type { ProvinceGroup, SearchCity } from '@/lib/barber-search'
 import { cn } from '@/utils/cn'
 
 export function CityAutocomplete({
@@ -48,7 +48,7 @@ export function CityAutocomplete({
           type="button"
           aria-label="فیلتر بر اساس شهر"
           className={cn(
-            'flex h-11 w-full shrink-0 items-center justify-between gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-56',
+            'flex h-9 w-full md:w-fit shrink-0 items-center justify-between gap-1.5 rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ',
             value ? 'text-foreground' : 'text-muted-foreground',
           )}
         >
@@ -56,7 +56,6 @@ export function CityAutocomplete({
             <MapPin className="size-4 shrink-0" />
             {selected ? selected.name : placeholder}
           </span>
-          <Search className="size-4 shrink-0 text-muted-foreground" />
         </button>
       </PopoverTrigger>
 

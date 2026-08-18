@@ -86,9 +86,6 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
-    users: {
-      activeBarber: 'barbers';
-    };
     barbers: {
       appointments: 'appointments';
     };
@@ -136,20 +133,18 @@ export interface Config {
 }
 export interface UserAuthOperations {
   forgotPassword: {
-    email: string;
-    password: string;
+    username: string;
   };
   login: {
-    email: string;
     password: string;
+    username: string;
   };
   registerFirstUser: {
-    email: string;
     password: string;
+    username: string;
   };
   unlock: {
-    email: string;
-    password: string;
+    username: string;
   };
 }
 /**
@@ -158,22 +153,13 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
-  name: string;
+  name?: string | null;
   role: 'customer' | 'barber' | 'admin';
-  phone?: string | null;
   avatar?: (string | null) | Media;
-  /**
-   * کاربر تأیید شده است
-   */
-  isVerified?: boolean | null;
-  activeBarber?: {
-    docs?: (string | Barber)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
   updatedAt: string;
   createdAt: string;
-  email: string;
+  email?: string | null;
+  username: string;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
   salt?: string | null;
@@ -208,6 +194,68 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "otps".
+ */
+export interface Otp {
+  id: string;
+  phone: string;
+  role: 'customer' | 'barber';
+  code: string;
+  expiresAt: string;
+  used?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities".
+ */
+export interface City {
+  id: string;
+  name: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  province:
+    | 'azarbaijan-sharghi'
+    | 'azarbaijan-gharbi'
+    | 'ardabil'
+    | 'isfahan'
+    | 'alborz'
+    | 'ilam'
+    | 'bushehr'
+    | 'tehran'
+    | 'chaharmahal-bakhtiari'
+    | 'khorasan-jonubi'
+    | 'khorasan-razavi'
+    | 'khorasan-shomali'
+    | 'khuzestan'
+    | 'zanjan'
+    | 'semnan'
+    | 'sistan-baluchestan'
+    | 'fars'
+    | 'qazvin'
+    | 'qom'
+    | 'kurdistan'
+    | 'kerman'
+    | 'kermanshah'
+    | 'kohgiluyeh-boyerahmad'
+    | 'golestan'
+    | 'gilan'
+    | 'lorestan'
+    | 'mazandaran'
+    | 'markazi'
+    | 'hormozgan'
+    | 'hamadan'
+    | 'yazd';
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -275,54 +323,6 @@ export interface Barber {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cities".
- */
-export interface City {
-  id: string;
-  name: string;
-  /**
-   * When enabled, the slug will auto-generate from the title field on save and autosave.
-   */
-  generateSlug?: boolean | null;
-  slug: string;
-  province:
-    | 'azarbaijan-sharghi'
-    | 'azarbaijan-gharbi'
-    | 'ardabil'
-    | 'isfahan'
-    | 'alborz'
-    | 'ilam'
-    | 'bushehr'
-    | 'tehran'
-    | 'chaharmahal-bakhtiari'
-    | 'khorasan-jonubi'
-    | 'khorasan-razavi'
-    | 'khorasan-shomali'
-    | 'khuzestan'
-    | 'zanjan'
-    | 'semnan'
-    | 'sistan-baluchestan'
-    | 'fars'
-    | 'qazvin'
-    | 'qom'
-    | 'kurdistan'
-    | 'kerman'
-    | 'kermanshah'
-    | 'kohgiluyeh-boyerahmad'
-    | 'golestan'
-    | 'gilan'
-    | 'lorestan'
-    | 'mazandaran'
-    | 'markazi'
-    | 'hormozgan'
-    | 'hamadan'
-    | 'yazd';
-  isActive?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments".
  */
 export interface Appointment {
@@ -349,20 +349,6 @@ export interface Service {
    */
   icon?: (string | null) | Media;
   isActive?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "otps".
- */
-export interface Otp {
-  id: string;
-  phone: string;
-  role: 'customer' | 'barber';
-  code: string;
-  expiresAt: string;
-  used?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -591,13 +577,11 @@ export interface PayloadMigration {
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
   role?: T;
-  phone?: T;
   avatar?: T;
-  isVerified?: T;
-  activeBarber?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
+  username?: T;
   resetPasswordToken?: T;
   resetPasswordExpiration?: T;
   salt?: T;

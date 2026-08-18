@@ -107,7 +107,7 @@ export const verifyOtpEndpoint: PayloadEndpoint = {
     const { docs: existing } = await req.payload.find({
       collection: AUTH_COLLECTION,
       overrideAccess: true,
-      where: { phone: { equals: phone } },
+      where: { username: { equals: phone } },
       limit: 1,
       depth: 0,
     })
@@ -118,18 +118,16 @@ export const verifyOtpEndpoint: PayloadEndpoint = {
     }
 
     if (!user) {
-      const email = `${phone}@otp.local`
       user = await req.payload.create({
         collection: AUTH_COLLECTION,
         overrideAccess: true,
         depth: 0,
         data: {
-          name: phone,
-          phone,
+          username: phone,
           role,
-          email,
+          // No email/name needed — identity is the phone (username) authenticated
+          // via OTP. Password only exists so admins can share this auth collection.
           password: randomBytes(24).toString('hex'),
-          isVerified: true,
         },
       })
     }
@@ -140,7 +138,7 @@ export const verifyOtpEndpoint: PayloadEndpoint = {
     const fieldsToSign: Record<string, unknown> = {
       id: user.id,
       collection: AUTH_COLLECTION,
-      email: typeof user.email === 'string' ? user.email : '',
+      username: typeof user.username === 'string' ? user.username : '',
       role: user.role,
     }
 

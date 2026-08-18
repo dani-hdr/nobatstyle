@@ -35,7 +35,7 @@ test.describe('Admin Panel', () => {
   test('can navigate to edit view', async () => {
     await page.goto('http://localhost:3000/admin/collections/users/create')
     await expect(page).toHaveURL(/\/admin\/collections\/users\/[a-zA-Z0-9-_]+/)
-    const editViewArtifact = page.locator('input[name="email"]')
+    const editViewArtifact = page.locator('input[name="username"]')
     await expect(editViewArtifact).toBeVisible()
   })
 })

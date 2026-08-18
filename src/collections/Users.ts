@@ -9,13 +9,20 @@ export const Users: CollectionConfig = {
     plural: 'کاربران',
   },
   admin: {
-    useAsTitle: 'name',
+    useAsTitle: 'username',
     group: 'کاربران و اشتراک',
   },
   auth: {
     tokenExpiration: 60 * 60 * 24 * 30,
     maxLoginAttempts: 5,
     verify: false,
+    // Login identity is the phone number (username). Email is not required and
+    // email/password login is disabled — admins use username+password in the
+    // panel, while customers/barbers authenticate via OTP.
+    loginWithUsername: {
+      requireEmail: false,
+      allowEmailLogin: false,
+    },
   },
   access: {
     read: ({ req }) => isAdmin({ req }),
@@ -31,7 +38,6 @@ export const Users: CollectionConfig = {
     {
       name: 'name',
       type: 'text',
-      required: true,
       maxLength: 60,
       label: 'نام',
     },
@@ -49,8 +55,10 @@ export const Users: CollectionConfig = {
       ],
     },
     {
-      name: 'phone',
+      name: 'username',
       type: 'text',
+      required: true,
+      unique: true,
       label: 'شماره تماس',
       admin: {
         position: 'sidebar',
@@ -65,27 +73,6 @@ export const Users: CollectionConfig = {
         position: 'sidebar',
       },
     },
-    {
-      name: 'isVerified',
-      type: 'checkbox',
-      defaultValue: false,
-      label: 'تأیید شده',
-      admin: {
-        position: 'sidebar',
-        description: 'کاربر تأیید شده است',
-      },
-    },
-    {
-      name: 'activeBarber',
-      type: 'join',
-      collection: 'barbers',
-      on: 'user',
-      hasMany: false,
-      label: 'آرایشگر فعال',
-      admin: {
-        position: 'sidebar',
-        condition: (data, siblingData) => data?.role === ROLES.BARBER,
-      },
-    },
+  
   ],
 }

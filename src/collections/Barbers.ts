@@ -1,6 +1,6 @@
 import type { CollectionConfig, Where } from 'payload'
-import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
+import { ROLES } from '../utils/constants'
 
 /**
  * Central barber profile. Rating & reviewCount are denormalized and kept in

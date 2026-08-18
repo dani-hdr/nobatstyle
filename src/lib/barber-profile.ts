@@ -70,6 +70,7 @@ export type BarberProfile = {
   address: string
   /** Location coordinates for the map embed (optional until Payload wiring). */
   coordinates?: { lat: number; lng: number }
+  avatar: BarberImage
   coverImage: BarberImage
   gallery: BarberImage[]
   status: 'open' | 'away' | 'closed'
@@ -116,6 +117,7 @@ export const MOCK_BARBER: BarberProfile = {
   region: 'آفرینش',
   address: 'دزفول - آفرینش - بین خیابان فجر و مدرس',
   coordinates: { lat: 32.381, lng: 48.398 },
+  avatar: { url: img('nobat-avatar-barber'), alt: 'آواتار رضا ممبینی' },
   coverImage: { url: img('nobat-cover', 1600, 900), alt: 'پیرایش جوانان' },
   gallery: [
     { url: img('nobat-g1', 900, 1100), alt: 'نمای داخل فروشگاه' },

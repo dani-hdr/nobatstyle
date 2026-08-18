@@ -28,7 +28,7 @@ export function Hero({
       <Container className="grid items-center gap-10 py-12 md:grid-cols-2 md:py-20 lg:gap-14">
         <div className="flex flex-col items-end md:items-start gap-3 md:gap-6 relative z-20 text-end md:text-start">
           <span className=" text-yellow-600 inline-flex items-center gap-2 rounded-full  text-sm md:text-3xl font-medium">
-           زیبایی وقت میخواهد
+            زیبایی وقت میخواهد
           </span>
 
           <h1 className="text-balance text-3xl font-bold leading-[1.15] tracking-tight md:text-5xl lg:text-[3.4rem] ">
@@ -57,12 +57,12 @@ export function Hero({
             </dl>
           )}
         </div>
- <div className="w-full max-w-[90%] mx-auto absolute -bottom-8 z-20 left-0 right-0  md:hidden">
-            <BarberSearch cities={cities} />
-          </div>
+        <div className="w-full max-w-[90%] mx-auto absolute -bottom-8 z-20 left-0 right-0  md:hidden">
+          <BarberSearch cities={cities} />
+        </div>
         <div className="absolute left-0 right-0 top-0 bottom-0 md:relative ">
           {image?.url ? (
-            <div className="relative aspect-[4/3] w-full h-full overflow-hidden md:rounded-3xl">
+            <div className="relative aspect-4/3 w-full h-full overflow-hidden md:rounded-3xl">
               <div className='absolute z-10 top-0 bottom-0 w-full bg-linear-to-r from-white  to-transparent md:bg-none'></div>
               <Image
                 src={image.url}

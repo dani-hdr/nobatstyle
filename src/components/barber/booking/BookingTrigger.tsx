@@ -32,7 +32,7 @@ export function BookingTrigger({
   const disabled = buttonProps.disabled || state === 'pending'
 
   return (
-    <Button {...buttonProps} disabled={disabled} onClick={() => openBooking(initialServiceId)}>
+    <Button size='lg' {...buttonProps} disabled={disabled} onClick={() => openBooking(initialServiceId)}>
       {children ?? label}
     </Button>
   )

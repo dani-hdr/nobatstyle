@@ -1,17 +1,13 @@
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-
 import { BarberHero } from '@/components/barber/BarberHero'
 import { BarberLocation } from '@/components/barber/BarberLocation'
-import { BarberPortfolio } from '@/components/barber/BarberPortfolio'
 import { BarberReviews } from '@/components/barber/BarberReviews'
 import { BarberServices } from '@/components/barber/BarberServices'
-import { BarberStats } from '@/components/barber/BarberStats'
 import { BookingProvider } from '@/components/barber/booking/booking-context'
-import { RelatedBarbers } from '@/components/barber/RelatedBarbers'
 import { StickyBookingCta } from '@/components/barber/StickyBookingCta'
 import { Container } from '@/components/layout/Container'
 import { getBarberProfile, getRelatedBarbers } from '@/lib/barber-profile'
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 
 type PageProps = { params: Promise<{ slug: string }> }
 
@@ -41,12 +37,13 @@ export default async function BarberPage({ params }: PageProps) {
   const related = getRelatedBarbers()
 
   return (
-    <Container className="space-y-12 py-6 md:py-10">
-      <BookingProvider barber={barber}>
+    <BookingProvider barber={barber}>
+      <Container className="md:space-y-12 px-0 md:px-6 md:py-10 ">
         <BarberHero barber={barber} />
-        <BarberStats stats={barber.stats} />
+      </Container>
+
+      <Container className="space-y-12 py-6 md:py-10">
         <BarberServices services={barber.services} />
-        <BarberPortfolio images={barber.portfolio} />
         <BarberReviews
           reviews={barber.reviews}
           rating={barber.rating}
@@ -57,10 +54,10 @@ export default async function BarberPage({ params }: PageProps) {
           region={barber.region}
           coordinates={barber.coordinates}
         />
-        <RelatedBarbers barbers={related} />
+
 
         <StickyBookingCta barber={barber} />
-      </BookingProvider>
-    </Container>
+      </Container>
+    </BookingProvider>
   )
 }

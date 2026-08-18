@@ -1,7 +1,6 @@
 import type { CollectionConfig } from 'payload'
-import type { Role } from '../utils/constants'
-import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
+import { ROLES } from '../utils/constants'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -78,31 +77,14 @@ export const Users: CollectionConfig = {
     },
     {
       name: 'activeBarber',
-      type: 'relationship',
-      relationTo: 'barbers',
+      type: 'join',
+      collection: 'barbers',
+      on: 'user',
       hasMany: false,
       label: 'آرایشگر فعال',
       admin: {
         position: 'sidebar',
         condition: (data, siblingData) => data?.role === ROLES.BARBER,
-      },
-    },
-    {
-      name: 'createdAt',
-      type: 'date',
-      access: {
-        read: () => true,
-      },
-      label: 'تاریخ ایجاد',
-      admin: {
-        readOnly: true,
-        position: 'sidebar',
-        date: {
-          pickerAppearance: 'dayAndTime',
-        },
-        components: {
-          Field: '/components/fields/PersianDateField#PersianDateTimeField',
-        },
       },
     },
   ],

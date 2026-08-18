@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    otps: Otp;
     media: Media;
     cities: City;
     barbers: Barber;
@@ -85,12 +86,16 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    users: {
+      activeBarber: 'barbers';
+    };
     barbers: {
       appointments: 'appointments';
     };
   };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    otps: OtpsSelect<false> | OtpsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
     barbers: BarbersSelect<false> | BarbersSelect<true>;
@@ -161,9 +166,13 @@ export interface User {
    * کاربر تأیید شده است
    */
   isVerified?: boolean | null;
-  activeBarber?: (string | null) | Barber;
-  createdAt: string;
+  activeBarber?: {
+    docs?: (string | Barber)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
+  createdAt: string;
   email: string;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
@@ -345,6 +354,20 @@ export interface Service {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "otps".
+ */
+export interface Otp {
+  id: string;
+  phone: string;
+  role: 'customer' | 'barber';
+  code: string;
+  expiresAt: string;
+  used?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "reviews".
  */
 export interface Review {
@@ -472,6 +495,10 @@ export interface PayloadLockedDocument {
         value: string | User;
       } | null)
     | ({
+        relationTo: 'otps';
+        value: string | Otp;
+      } | null)
+    | ({
         relationTo: 'media';
         value: string | Media;
       } | null)
@@ -568,8 +595,8 @@ export interface UsersSelect<T extends boolean = true> {
   avatar?: T;
   isVerified?: T;
   activeBarber?: T;
-  createdAt?: T;
   updatedAt?: T;
+  createdAt?: T;
   email?: T;
   resetPasswordToken?: T;
   resetPasswordExpiration?: T;
@@ -584,6 +611,19 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "otps_select".
+ */
+export interface OtpsSelect<T extends boolean = true> {
+  phone?: T;
+  role?: T;
+  code?: T;
+  expiresAt?: T;
+  used?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

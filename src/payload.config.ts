@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { Users } from './collections/Users'
+import { Otps } from './collections/Otps'
 import { Media } from './collections/Media'
 import { Cities } from './collections/Cities'
 import { Barbers } from './collections/Barbers'
@@ -29,6 +30,7 @@ import {
   customerDashboardEndpoint,
   barberDashboardEndpoint,
 } from './endpoints'
+import { requestOtpEndpoint, verifyOtpEndpoint } from './endpoints/otp'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -42,6 +44,7 @@ export default buildConfig({
   },
   collections: [
     Users,
+    Otps,
     Media,
     Cities,
     Barbers,
@@ -64,6 +67,8 @@ export default buildConfig({
     statusMetaEndpoint,
     customerDashboardEndpoint,
     barberDashboardEndpoint,
+    requestOtpEndpoint,
+    verifyOtpEndpoint,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

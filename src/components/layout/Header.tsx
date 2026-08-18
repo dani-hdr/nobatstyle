@@ -5,8 +5,8 @@ import Link from 'next/link'
 import * as React from 'react'
 
 import { BarberSearch } from '@/components/home/BarberSearch'
-import type { ProvinceGroup } from '@/lib/barber-search'
 import { Button } from '@/components/ui/button'
+import type { ProvinceGroup } from '@/lib/barber-search'
 import { cn } from '@/utils/cn'
 import { Container } from './Container'
 import { DesktopNav } from './DesktopNav'
@@ -65,7 +65,7 @@ export function Header({
                 </Button>
               }
             />
-            <Link href="/auth/login" className="hidden md:block">
+            <Link href="/login" className="hidden md:block">
               <Button size="sm" className="h-9 rounded-full px-5">
                 ورود / ثبت‌نام
               </Button>

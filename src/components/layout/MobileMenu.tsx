@@ -67,7 +67,7 @@ export function MobileMenu({ items = DEFAULT_NAV_ITEMS }: { items?: NavItem[] })
 
           <section>
             <div className="text-muted-foreground mb-2 px-1 text-xs font-medium">حساب کاربری</div>
-            <Link href="/auth/login" className="block">
+            <Link href="/login" className="block">
               <Button className="w-full" size="lg">
                 <UserRound className="size-4" />
                 ورود / ثبت‌نام

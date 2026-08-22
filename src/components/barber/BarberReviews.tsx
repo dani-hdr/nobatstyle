@@ -1,11 +1,10 @@
 'use client'
 
-import { BadgeCheck, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import * as React from 'react'
 import { useMemo, useState } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
@@ -57,12 +56,14 @@ export function BarberReviews({
             <span className="text-4xl font-extrabold">{toFa(rating)}</span>
             <div>
               <div className="flex gap-0.5">
-                {Array.from({ length: ratingMax }).map((_, i) => (
+                {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
                     className={cn(
                       'size-4',
-                      i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-muted',
+                      i < Math.round((rating / ratingMax) * 5)
+                        ? 'text-amber-400 fill-amber-400'
+                        : 'text-muted',
                     )}
                   />
                 ))}
@@ -130,15 +131,7 @@ function ReviewCard({ review }: { review: BarberReview }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold">{review.customerName}</p>
-              {review.verifiedBooking && (
-                <Badge variant="success" className="gap-1">
-                  <BadgeCheck className="size-3" />
-                  نوبت تایید شده
-                </Badge>
-              )}
-            </div>
+            <p className="font-semibold">{review.customerName}</p>
             <span className="flex items-center gap-1 text-sm font-semibold">
               <Star className="text-amber-400 fill-amber-400 size-3.5" />
               {toFaD(review.rating)}

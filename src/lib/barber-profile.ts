@@ -43,6 +43,9 @@ export type BarberService = {
   /** Price in Toman (nullable if not public) */
   price?: number | null
   popular?: boolean
+  image?: BarberImage
+  /** Remaining bookable appointments for this service */
+  remainingSlots?: number
 }
 
 export type BarberReview = {
@@ -136,12 +139,56 @@ export const MOCK_BARBER: BarberProfile = {
     { label: 'سابقه فعالیت', value: 'سه سال' },
   ],
   services: [
-    { id: 'svc-1', name: 'اصلاح ریش', durationMinutes: 30, price: 180_000 },
-    { id: 'svc-2', name: 'اصلاح ریش + فرم دهی', durationMinutes: 45, price: 250_000, popular: true },
-    { id: 'svc-3', name: 'کوتاهی مو', durationMinutes: 60, price: 220_000 },
-    { id: 'svc-4', name: 'شست و شو + کوتاهی + استایل', durationMinutes: 90, price: 320_000, popular: true },
-    { id: 'svc-5', name: 'حالت مو', durationMinutes: 20, price: 150_000 },
-    { id: 'svc-6', name: 'سشوار + فرم دهی', durationMinutes: 25, price: 170_000 },
+    {
+      id: 'svc-1',
+      name: 'اصلاح ریش',
+      durationMinutes: 30,
+      price: 180_000,
+      image: { url: img('nobat-svc-1', 400, 400), alt: 'اصلاح ریش' },
+      remainingSlots: 5,
+    },
+    {
+      id: 'svc-2',
+      name: 'اصلاح ریش + فرم دهی',
+      durationMinutes: 45,
+      price: 250_000,
+      popular: true,
+      image: { url: img('nobat-svc-2', 400, 400), alt: 'اصلاح ریش و فرم دهی' },
+      remainingSlots: 2,
+    },
+    {
+      id: 'svc-3',
+      name: 'کوتاهی مو',
+      durationMinutes: 60,
+      price: 220_000,
+      image: { url: img('nobat-svc-3', 400, 400), alt: 'کوتاهی مو' },
+      remainingSlots: 8,
+    },
+    {
+      id: 'svc-4',
+      name: 'شست و شو + کوتاهی + استایل',
+      durationMinutes: 90,
+      price: 320_000,
+      popular: true,
+      image: { url: img('nobat-svc-4', 400, 400), alt: 'شست و شو، کوتاهی و استایل' },
+      remainingSlots: 0,
+    },
+    {
+      id: 'svc-5',
+      name: 'حالت مو',
+      durationMinutes: 20,
+      price: 150_000,
+      image: { url: img('nobat-svc-5', 400, 400), alt: 'حالت مو' },
+      remainingSlots: 6,
+    },
+    {
+      id: 'svc-6',
+      name: 'سشوار + فرم دهی',
+      durationMinutes: 25,
+      price: 170_000,
+      image: { url: img('nobat-svc-6', 400, 400), alt: 'سشوار و فرم دهی' },
+      remainingSlots: 3,
+    },
   ],
   portfolio: [
     { url: img('nobat-p1', 800, 1000), alt: 'نمونه کار ۱' },
@@ -182,7 +229,8 @@ export const MOCK_BARBER: BarberProfile = {
       verifiedBooking: false,
     },
   ],
-  availabilityDays: 7,
+  /** Booking is open for today + tomorrow only (max advance = 1 day). */
+  availabilityDays: 2,
   bookingState: 'booking',
 }
 

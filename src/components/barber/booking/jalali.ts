@@ -56,8 +56,10 @@ export function defaultAvailable(availableDays: JalaliDayMeta[]): string | undef
 /**
  * Renders the current Persian month as a week grid (weeks start on Saturday).
  * Each leading/trailing day outside the month is still a cell (with `inMonth: false`).
+ * When `allowedKeys` is given, only those days (yyyy/MM/dd) are selectable —
+ * used to clamp the calendar to the barber's booking window.
  */
-export function buildMonthGrid(now = new Date()): JalaliCell[] {
+export function buildMonthGrid(now = new Date(), allowedKeys?: Set<string>): JalaliCell[] {
   const persianNow = new DateObject(now).convert(persian)
   const year = persianNow.year
   const month = persianNow.month.number
@@ -90,6 +92,12 @@ export function buildMonthGrid(now = new Date()): JalaliCell[] {
     cells.push(toCell(next, false))
   }
 
+  if (allowedKeys) {
+    for (const cell of cells) {
+      cell.available = allowedKeys.has(cell.key)
+    }
+  }
+
   return cells
 }
 
@@ -105,15 +113,15 @@ function toCell(date: Date, inMonth: boolean): JalaliCell {
 }
 
 export function formatJalali(date: Date): string {
-  return new DateObject(date).convert(persian).format('dddd D MMMM YYYY')
+  return new DateObject(date).convert(persian, persian_fa).format('dddd D MMMM YYYY')
 }
 
 export function formatJalaliShort(date: Date | string): string {
   const d =
     typeof date === 'string'
-      ? new DateObject({ calendar: persian, year: Number(date.slice(0, 4)), month: Number(date.slice(5, 7)), day: Number(date.slice(8, 10)) }).toDate()
+      ? new DateObject({ calendar: persian, locale: persian_fa, year: Number(date.slice(0, 4)), month: Number(date.slice(5, 7)), day: Number(date.slice(8, 10)) }).toDate()
       : date
-  return new DateObject(d).convert(persian).format('D MMMM')
+  return new DateObject(d).convert(persian, persian_fa).format('dddd D MMMM')
 }
 
 /**

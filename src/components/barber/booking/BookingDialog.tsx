@@ -3,22 +3,21 @@
 import { CalendarCheck, Check, ChevronLeft, ChevronRight, Clock, Scissors } from 'lucide-react'
 import * as React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import {
   formatDuration,
-  formatPrice,
   type BarberProfile,
   type BarberService,
 } from '@/lib/barber-profile'
@@ -51,6 +50,10 @@ export function BookingDialog({
   const [notes, setNotes] = useState('')
 
   const availableDays = useMemo(() => buildAvailableDays(barber.availabilityDays), [barber.availabilityDays])
+  const bookableKeys = useMemo(
+    () => new Set(availableDays.filter((d) => d.available).map((d) => d.key)),
+    [availableDays],
+  )
   const selectedService = useMemo(
     () => barber.services.find((s) => s.id === selectedServiceId),
     [barber.services, selectedServiceId],
@@ -103,21 +106,22 @@ export function BookingDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={!success}
-        className="max-h-[90dvh] gap-0 overflow-hidden p-0 sm:max-w-lg"
-      >
-        <DialogHeader className="border-b p-5">
-          <DialogTitle className="text-base">
-            {success ? 'رزرو نوبت' : `رزرو نوبت — ${barber.shopName}`}
-          </DialogTitle>
-          <DialogDescription>
-            {success
-              ? 'نوبت با موفقیت ثبت شد'
-              : 'در چند قدم ساده نوبت موردنظرت رو رزرو کن'}
-          </DialogDescription>
-        </DialogHeader>
+    <ResponsiveModal
+      open={open}
+      onOpenChange={onOpenChange}
+      hideClose={success}
+      className="max-h-[90dvh] overflow-hidden sm:max-w-lg"
+    >
+      <DialogHeader className="border-b p-5">
+        <DialogTitle className="text-base">
+          {success ? 'رزرو نوبت' : `رزرو نوبت — ${barber.shopName}`}
+        </DialogTitle>
+        <DialogDescription>
+          {success
+            ? 'نوبت با موفقیت ثبت شد'
+            : 'در چند قدم ساده نوبت موردنظرت رو رزرو کن'}
+        </DialogDescription>
+      </DialogHeader>
 
         {success ? (
           <SuccessView
@@ -131,12 +135,13 @@ export function BookingDialog({
           <>
             <Stepper current={step} />
 
-            <div className="overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
               {step === 0 && (
                 <DateStep
                   availableDays={availableDays}
                   selectedDateKey={selectedDateKey}
                   onSelect={selectDay}
+                  bookableKeys={bookableKeys}
                 />
               )}
               {step === 1 && (
@@ -189,8 +194,7 @@ export function BookingDialog({
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveModal>
   )
 }
 
@@ -234,10 +238,12 @@ function DateStep({
   availableDays,
   selectedDateKey,
   onSelect,
+  bookableKeys,
 }: {
   availableDays: ReturnType<typeof buildAvailableDays>
   selectedDateKey?: string
   onSelect: (key: string, available: boolean) => void
+  bookableKeys: Set<string>
 }) {
   return (
     <div className="space-y-5">
@@ -246,11 +252,20 @@ function DateStep({
         <p className="text-muted-foreground text-xs">تاریخ مورد نظر خود را انتخاب کنید</p>
       </div>
 
-      <JalaliCalendar selectedKey={selectedDateKey} onSelect={onSelect} />
+      <JalaliCalendar
+        selectedKey={selectedDateKey}
+        onSelect={onSelect}
+        allowedKeys={bookableKeys}
+      />
 
       <div>
         <h4 className="text-muted-foreground mb-2 text-xs font-medium">روزهای پیش رو</h4>
-        <div className="grid grid-cols-4 gap-2">
+        <div
+          className={cn(
+            'grid gap-2',
+            availableDays.length <= 2 ? 'grid-cols-2' : 'grid-cols-4',
+          )}
+        >
           {availableDays.map((day) => (
             <button
               key={day.key}
@@ -320,27 +335,41 @@ function ServiceStep({
               type="button"
               onClick={() => onSelect(service.id)}
               className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-start transition-colors',
+                'flex w-full items-center gap-3 rounded-lg border p-3 text-start transition-colors',
                 selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted',
               )}
             >
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{service.name}</p>
-                <p className="text-muted-foreground text-xs">{formatDuration(service.durationMinutes)}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {formatPrice(service.price) && (
-                  <span className="text-muted-foreground text-xs">{formatPrice(service.price)}</span>
+              <div className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg border">
+                {service.image?.url && (
+                  <Image
+                    src={service.image.url}
+                    alt={service.image.alt ?? service.name}
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
                 )}
-                <span
-                  className={cn(
-                    'flex size-5 items-center justify-center rounded-full border transition-colors',
-                    selected && 'border-primary bg-primary text-primary-foreground',
-                  )}
-                >
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{service.name}</p>
+                <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                  <Clock className="size-3" />
+                  {formatDuration(service.durationMinutes)}
+                </p>
+                <p className={cn('mt-0.5 text-xs', remainingClass(service.remainingSlots))}>
+                  {remainingLabel(service.remainingSlots)}
+                </p>
+              </div>
+
+              <span
+                className={cn(
+                  'flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                  selected && 'border-primary bg-primary text-primary-foreground',
+                )}
+              >
                   {selected && <Check className="size-3" />}
                 </span>
-              </div>
             </button>
           )
         })}
@@ -520,4 +549,18 @@ function SummaryRow({
       <span className="font-medium">{value}</span>
     </div>
   )
+}
+
+function remainingLabel(remaining?: number): string {
+  if (remaining == null) return ''
+  if (remaining <= 0) return 'تکمیل ظرفیت'
+  if (remaining <= 2) return `فقط ${toFaDigits(remaining)} نوبت باقی مانده`
+  return `${toFaDigits(remaining)} نوبت باقی مانده`
+}
+
+function remainingClass(remaining?: number): string {
+  if (remaining == null) return 'text-muted-foreground'
+  if (remaining <= 0) return 'text-destructive font-medium'
+  if (remaining <= 2) return 'text-amber-600 dark:text-amber-400 font-medium'
+  return 'text-muted-foreground'
 }

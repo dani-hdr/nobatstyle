@@ -45,14 +45,10 @@ After adding/renaming/changing a collection's fields, run `pnpm generate:types` 
   - `PAYLOAD_SECRET` — any long random string
 - Dev and int tests require a **running MongoDB**. Use `docker compose up -d` (the repo's `docker-compose.yml` starts a `mongo` service on `localhost:27017`) or a local instance. The REST/int API tests connect to it via `getPayload`.
 
-## Testing notes
-
-- Integration tests import `@/payload.config` and hit the real DB — need MongoDB and `.env` present.
-- E2E (Playwright) tests seed and then delete a test user (`dev@payloadcms.com` / `test`) via helpers in `tests/helpers/`; they hardcode `http://localhost:3000`. Tests hit real localhost URLs, so don't rely on Playwright's baseURL.
-- `test.env` sets `NODE_OPTIONS`; not usually needed manually.
 
 ## Conventions
 
 - TypeScript strict; `@/*` imports preferred.
 - ESLint downgrades common TS lint issues to warnings (no-unused-vars, no-explicit-any, etc.).
 - Prettier config lives in `.prettierrc.json`; match existing formatting.
+- **Modals on mobile open as bottom drawers.** Every new modal must render as a `Sheet side="bottom"` below `md` and a centered `Dialog` from `md` up. Use `ResponsiveModal` (`src/components/ui/responsive-modal.tsx`) instead of raw `Dialog`/`Sheet`.

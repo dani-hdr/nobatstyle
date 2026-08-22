@@ -1,15 +1,11 @@
 'use client'
 
-import { Check } from 'lucide-react'
-import * as React from 'react'
 import { useState } from 'react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { PREVIEW_LIMITS, formatDuration, formatPrice, type BarberService } from '@/lib/barber-profile'
+import { PREVIEW_LIMITS, type BarberService } from '@/lib/barber-profile'
 
-import { BookingTrigger } from './booking/BookingTrigger'
 import { SectionHeading } from './SectionHeading'
 
 export function BarberServices({ services }: { services: BarberService[] }) {
@@ -20,40 +16,16 @@ export function BarberServices({ services }: { services: BarberService[] }) {
   return (
     <section id="services" className="scroll-mt-20">
       <SectionHeading title="خدمات" subtitle="انتخاب خدمت موردنظر و رزرو آنلاین" />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         {visible.map((service) => (
           <Card key={service.id} className="gap-0 py-5">
-            <CardContent className="flex h-full flex-col gap-3">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold">{service.name}</h3>
-                {service.popular && (
-                  <Badge variant="success" className="shrink-0">
-                    پرفروش
-                  </Badge>
-                )}
-              </div>
+            <CardContent className="flex h-full flex-col gap-2">
+              <h3 className="font-semibold">{service.name}</h3>
               {service.description && (
-                <p className="text-muted-foreground flex-1 text-sm leading-6">
+                <p className="text-muted-foreground text-sm leading-6">
                   {service.description}
                 </p>
               )}
-
-              <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                <span>{formatDuration(service.durationMinutes)}</span>
-                {formatPrice(service.price) && (
-                  <span className="font-medium text-foreground">{formatPrice(service.price)}</span>
-                )}
-              </div>
-
-              <BookingTrigger
-                initialServiceId={service.id}
-                variant="outline"
-                size="sm"
-                className="mt-1 w-full rounded-lg"
-              >
-                <Check className="size-4" />
-                انتخاب خدمت
-              </BookingTrigger>
             </CardContent>
           </Card>
         ))}

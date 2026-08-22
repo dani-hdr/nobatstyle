@@ -2,11 +2,13 @@
 
 import { BadgeCheck } from 'lucide-react'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import type { BarberImage } from '@/lib/barber-profile'
 import { cn } from '@/utils/cn'
+
+import { ImageLightbox } from './ImageLightbox'
 
 export function BarberCoverGallery({
   coverImage,
@@ -18,18 +20,37 @@ export function BarberCoverGallery({
   verified: boolean
 }) {
   const [active, setActive] = useState(0)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  const allImages = useMemo(() => [coverImage, ...gallery], [coverImage, gallery])
+  const currentUrl = gallery[active]?.url ?? coverImage.url
+
+  const openLightbox = () => {
+    const startIndex = Math.max(
+      0,
+      allImages.findIndex((img) => img.url === currentUrl),
+    )
+    setLightboxIndex(startIndex)
+  }
 
   return (
     <div className="relative">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border bg-muted">
-        <Image
-          src={gallery[active]?.url ?? coverImage.url}
-          alt={gallery[active]?.alt ?? coverImage.alt}
-          fill
-          priority
-          sizes="(min-width:1024px) 50vw, 100vw"
-          className="object-cover transition-all duration-300"
-        />
+        <button
+          type="button"
+          onClick={openLightbox}
+          aria-label="مشاهده گالری"
+          className="group absolute inset-0 size-full cursor-zoom-in"
+        >
+          <Image
+            src={currentUrl}
+            alt={gallery[active]?.alt ?? coverImage.alt}
+            fill
+            priority
+            sizes="(min-width:1024px) 50vw, 100vw"
+            className="object-cover transition-all duration-300 group-hover:scale-[1.02]"
+          />
+        </button>
         {verified && (
           <Badge variant="secondary" className="bg-background/90 absolute top-3 start-3 gap-1 shadow-sm">
             <BadgeCheck className="size-3.5 text-emerald-500" />
@@ -56,6 +77,13 @@ export function BarberCoverGallery({
           ))}
         </div>
       )}
+
+      <ImageLightbox
+        images={allImages}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </div>
   )
 }

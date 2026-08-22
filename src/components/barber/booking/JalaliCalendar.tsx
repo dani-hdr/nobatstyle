@@ -9,11 +9,14 @@ import { buildMonthGrid, WEEKDAYS, toFaDigits } from './jalali'
 function JalaliCalendar({
   selectedKey,
   onSelect,
+  allowedKeys,
 }: {
   selectedKey?: string
   onSelect: (key: string, available: boolean) => void
+  /** Booking window (yyyy/MM/dd keys). Days outside it are disabled. */
+  allowedKeys?: Set<string>
 }) {
-  const cells = useMemo(() => buildMonthGrid(), [])
+  const cells = useMemo(() => buildMonthGrid(new Date(), allowedKeys), [allowedKeys])
 
   return (
     <div className="select-none">

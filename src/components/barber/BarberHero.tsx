@@ -1,10 +1,11 @@
 'use client'
 
-import { Check, Heart, MapPin, Share2, Star } from 'lucide-react'
+import { Check, Heart, MapPin, Share2, Star, UserCheck } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -68,6 +69,12 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
         <CardContent className="space-y-4 z-20 relative ">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={barber.status} />
+            {barber.isYourBarber && (
+              <Badge className="gap-1 border border-emerald-400/40 bg-emerald-500/20 text-emerald-100">
+                <UserCheck className="size-3.5" />
+                آرایشگر شما
+              </Badge>
+            )}
             {barber.statusNote && (
               <span className="text-muted text-xs">{barber.statusNote}</span>
             )}

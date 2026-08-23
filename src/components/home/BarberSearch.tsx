@@ -36,7 +36,7 @@ type ResultBarber = {
   shopName: string
   shopSlug?: string | null
   rating?: number | null
-  avatar?: ({ url?: string | null; alt?: string | null } | string | null) | null
+  user?: { avatar?: ({ url?: string | null; alt?: string | null } | string | number | null) | null } | string | number | null
   city?: ({ id: string; name: string } | string | null) | null
 }
 
@@ -119,10 +119,10 @@ function TriggerBar({ cities, open }: { cities: ProvinceGroup[]; open: (v: boole
         جستجوی آرایشگر یا سالن...
       </button>
       {city && (
-        <span className="bg-muted text-muted-foreground hidden items-center gap-1 rounded-md px-2 py-1 text-xs sm:inline-flex">
+        <div className="bg-muted text-muted-foreground hidden items-center gap-1 rounded-md px-2 py-1 text-xs sm:inline-flex">
           <MapPin className="size-3.5" />
           {city.name}
-        </span>
+        </div>
       )}
     </div>
   )
@@ -281,13 +281,18 @@ function BarberSearchContent({
 }
 
 function BarberItem({ row }: { row: ResultBarber }) {
+  const avatar =
+    row.user && typeof row.user === 'object' && row.user.avatar && typeof row.user.avatar === 'object'
+      ? row.user.avatar
+      : null
+
   return (
     <>
       <div className="bg-muted relative size-11 shrink-0 overflow-hidden rounded-full">
-        {row.avatar && typeof row.avatar === 'object' && row.avatar.url ? (
+        {avatar?.url ? (
           <Image
-            src={row.avatar.url}
-            alt={row.avatar.alt || row.shopName}
+            src={avatar.url}
+            alt={avatar.alt || row.shopName}
             fill
             sizes="44px"
             className="object-cover"

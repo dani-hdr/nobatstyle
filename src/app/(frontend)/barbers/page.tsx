@@ -6,7 +6,7 @@ import { BarberFilters } from '@/components/barbers/BarberFilters'
 import { Pagination } from '@/components/barbers/Pagination'
 import { Container } from '@/components/layout/Container'
 import { getCities } from '@/lib/barber-search'
-import { getBarbers } from '@/lib/barbers'
+import { getBarbers, type ListBarber } from '@/lib/barbers'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
@@ -72,10 +72,10 @@ export default async function BarbersPage({
               className="hover:bg-accent border bg-background flex items-center gap-4 rounded-2xl p-4 transition-colors"
             >
               <div className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-2xl">
-                {barber.avatar && typeof barber.avatar === 'object' && barber.avatar.url ? (
+                {barberAvatar(barber) ? (
                   <Image
-                    src={barber.avatar.url}
-                    alt={barber.avatar.alt || barber.shopName}
+                    src={barberAvatar(barber)!.url}
+                    alt={barberAvatar(barber)!.alt || barber.shopName}
                     fill
                     sizes="56px"
                     className="object-cover"
@@ -132,4 +132,14 @@ async function payloadFindActiveServices() {
     depth: 0,
   })
   return docs.map((d) => ({ id: d.id, name: d.name }))
+}
+
+function barberAvatar(
+  barber: ListBarber,
+): { url: string; alt?: string | null } | null {
+  const user = barber.user
+  if (!user || typeof user !== 'object') return null
+  const avatar = user.avatar
+  if (!avatar || typeof avatar !== 'object' || !avatar.url) return null
+  return { url: avatar.url, alt: avatar.alt }
 }

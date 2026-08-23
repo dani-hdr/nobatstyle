@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarCheck, Home, MessageCircle, User } from 'lucide-react'
+import { CalendarCheck, Home, Scissors, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -8,9 +8,9 @@ import { cn } from '@/utils/cn'
 
 const items = [
   { href: '/', label: 'خانه', Icon: Home },
-  { href: '/messages', label: 'پیام‌ها', Icon: MessageCircle },
-  { href: '/appointments', label: 'نوبت‌های من', Icon: CalendarCheck },
-  { href: '/profile', label: 'پروفایل', Icon: User },
+  { href: '/barbers', label: 'آرایشگرها', Icon: Scissors },
+  { href: '/services', label: 'خدمات', Icon: Sparkles },
+  { href: '/dashboard', label: 'نوبت‌های من', Icon: CalendarCheck },
 ]
 
 export function MobileBottomNav() {

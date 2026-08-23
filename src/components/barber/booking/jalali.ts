@@ -2,8 +2,6 @@ import DateObject from 'react-date-object'
 import persian from 'react-date-object/calendars/persian'
 import persian_fa from 'react-date-object/locales/persian_fa'
 
-import type { TimeSlot } from '@/lib/barber-profile'
-
 /** Persian weekdays starting Saturday (شنبه). Index 0 is Saturday. */
 export const WEEKDAYS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'] as const
 
@@ -125,25 +123,14 @@ export function formatJalaliShort(date: Date | string): string {
 }
 
 /**
- * Builds available time slots for a given available day. Slots are derived from
- * a fixed pool with a deterministic availability pattern so the UI is stable.
+ * Converts a Jalali day key (`yyyy/MM/dd`, Latin digits) to a Gregorian
+ * `yyyy-mm-dd` string, used as the `date` param for the appointments API.
  */
-export function buildSlotsForDay(jalaliKey: string): TimeSlot[] {
-  const slots: TimeSlot[] = []
-  const pool = ['09:00', '10:30', '12:00', '13:30', '15:00', '16:30', '18:00', '19:30', '21:00']
-  const seed = hashKey(jalaliKey)
-  pool.forEach((time, i) => {
-    const started = i < 3
-    const available = !started ? ((seed + i * 3) % 4 !== 0) : (seed % 2 === 0)
-    slots.push({ time, available })
-  })
-  return slots
-}
-
-function hashKey(key: string): number {
-  let h = 0
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
-  return h
+export function jalaliKeyToISODate(key: string): string {
+  const [y, m, d] = key.split('/').map(Number)
+  return new DateObject({ calendar: persian, year: y, month: m, day: d })
+    .toDate()
+    .toLocaleDateString('en-CA') // yyyy-mm-dd
 }
 
 export function toFaDigits(num: number | string): string {

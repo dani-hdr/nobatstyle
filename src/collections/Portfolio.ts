@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
+import { getBarberIdForUser } from '../lib/barber-user'
 
 /**
  * Barber portfolio images, served to the frontend via the API so image URLs
@@ -23,18 +24,24 @@ export const Portfolio: CollectionConfig = {
       if (!u) return false
       return isAdmin({ req }) || u.role === ROLES.BARBER
     },
-    update: ({ req }) => {
+    update: async ({ req }) => {
       const u = req.user
       if (!u) return false
       if (isAdmin({ req })) return true
-      if (u.role === ROLES.BARBER) return { barber: { equals: u.activeBarber } }
+      if (u.role === ROLES.BARBER) {
+        const barberId = await getBarberIdForUser(req.payload, u.id)
+        return barberId ? { barber: { equals: barberId } } : false
+      }
       return false
     },
-    delete: ({ req }) => {
+    delete: async ({ req }) => {
       const u = req.user
       if (!u) return false
       if (isAdmin({ req })) return true
-      if (u.role === ROLES.BARBER) return { barber: { equals: u.activeBarber } }
+      if (u.role === ROLES.BARBER) {
+        const barberId = await getBarberIdForUser(req.payload, u.id)
+        return barberId ? { barber: { equals: barberId } } : false
+      }
       return false
     },
   },

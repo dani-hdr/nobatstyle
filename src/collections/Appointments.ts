@@ -1,7 +1,18 @@
-import type { CollectionConfig, Where } from 'payload'
+import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import { APIError } from 'payload'
 import { isAdmin } from '../access'
+import { getBarberIdForUser } from '../lib/barber-user'
 import { ROLES } from '../utils/constants'
+
+/** Row constraint limiting a barber to their own shop's appointments. */
+async function ownBarberWhere(
+  payload: PayloadRequest['payload'],
+  userId: string,
+): Promise<Where | false> {
+  const barberId = await getBarberIdForUser(payload, userId)
+  if (!barberId) return false
+  return { barber: { equals: barberId } }
+}
 
 /**
  * Appointment windows a barber offers. Each window references a catalog
@@ -20,37 +31,36 @@ export const Appointments: CollectionConfig = {
     defaultColumns: ['barber', 'service', 'fromDate', 'toDate', 'status', 'customer'],
   },
   access: {
-    // Public reads available windows; barbers/admins read everything.
+    // Public reads available windows; barbers/admins read everything;
+    // customers additionally see their own reservations.
     read: ({ req }) => {
       if (!req.user) return { status: { equals: 'available' } }
       if (isAdmin({ req })) return true
-      if (req.user.role === ROLES.BARBER) {
-        const where: Where = { barber: { equals: String(req.user.activeBarber) } }
-        return where
+      if (req.user.role === ROLES.BARBER) return ownBarberWhere(req.payload, req.user.id)
+      const where: Where = {
+        or: [
+          { status: { equals: 'available' } },
+          { customer: { equals: String(req.user.id) } },
+        ],
       }
-      const where: Where = { status: { equals: 'available' } }
       return where
     },
     create: ({ req }) => {
       if (!req.user) return false
       return isAdmin({ req }) || req.user.role === ROLES.BARBER
     },
-    update: ({ req }) => {
+    update: async ({ req }) => {
       const u = req.user
       if (!u) return false
       if (isAdmin({ req })) return true
-      if (u.role === ROLES.BARBER) {
-        return { barber: { equals: String(u.activeBarber) } }
-      }
+      if (u.role === ROLES.BARBER) return ownBarberWhere(req.payload, u.id)
       return false
     },
-    delete: ({ req }) => {
+    delete: async ({ req }) => {
       const u = req.user
       if (!u) return false
       if (isAdmin({ req })) return true
-      if (u.role === ROLES.BARBER) {
-        return { barber: { equals: String(u.activeBarber) } }
-      }
+      if (u.role === ROLES.BARBER) return ownBarberWhere(req.payload, u.id)
       return false
     },
   },
@@ -81,7 +91,9 @@ export const Appointments: CollectionConfig = {
             customer: req.user.id,
             status: 'reserved',
           },
-          overrideAccess: false,
+          // The handler above already validated identity and availability;
+          // regular update access intentionally excludes customers.
+          overrideAccess: true,
           req,
         })
 
@@ -93,7 +105,9 @@ export const Appointments: CollectionConfig = {
     beforeChange: [
       async ({ data, operation, req }) => {
         if (operation === 'create' && req.user?.role === ROLES.BARBER && !data.barber) {
-          data.barber = String(req.user.activeBarber)
+          const barberId = await getBarberIdForUser(req.payload, req.user.id)
+          if (!barberId) throw new APIError('پروفایل آرایشگر یافت نشد', 404)
+          data.barber = barberId
         }
         if (data.status && data.status !== 'available' && !data.customer) {
           throw new APIError('برای رزرو این وقت باید مشتری مشخص شود', 400)
@@ -106,6 +120,30 @@ export const Appointments: CollectionConfig = {
           }
         }
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, req }) => {
+        // Track the barber's customers (many-to-many with users) so the
+        // profile page can show the «آرایشگر شما» badge.
+        if (!doc?.customer || !doc?.barber) return
+        const barberId = typeof doc.barber === 'object' ? doc.barber.id : doc.barber
+        const customerId = typeof doc.customer === 'object' ? doc.customer.id : doc.customer
+        const barberDoc = await req.payload.findByID({
+          collection: 'barbers',
+          id: String(barberId),
+          depth: 0,
+          overrideAccess: true,
+        })
+        const existing = (barberDoc.customers ?? []).map((c) => String(typeof c === 'object' ? c.id : c))
+        if (existing.includes(String(customerId))) return
+        await req.payload.update({
+          collection: 'barbers',
+          id: String(barberId),
+          data: { customers: [...existing, String(customerId)] },
+          req,
+          overrideAccess: true,
+        })
       },
     ],
   },

@@ -16,6 +16,10 @@ export const Users: CollectionConfig = {
     tokenExpiration: 60 * 60 * 24 * 30,
     maxLoginAttempts: 5,
     verify: false,
+    // Payload 3.88+ defaults useSessions to true, which requires a session id
+    // (`sid`) inside the token. Our OTP endpoint signs stateless JWTs without
+    // one, so keep sessions off or every OTP login would fail authentication.
+    useSessions: false,
     // Login identity is the phone number (username). Email is not required and
     // email/password login is disabled — admins use username+password in the
     // panel, while customers/barbers authenticate via OTP.
@@ -25,7 +29,12 @@ export const Users: CollectionConfig = {
     },
   },
   access: {
-    read: ({ req }) => isAdmin({ req }),
+    read: ({ req }) => {
+      if (isAdmin({ req })) return true
+      // Each user may read their own document (needed by /api/users/me).
+      if (!req.user) return false
+      return { id: { equals: req.user.id } }
+    },
     create: () => true,
     update: ({ req }) => {
       if (!req.user) return false

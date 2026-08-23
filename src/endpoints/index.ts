@@ -1,5 +1,6 @@
 import type { Endpoint as PayloadEndpoint, Where } from 'payload'
 import { APIError } from 'payload'
+import { getBarberIdForUser } from '../lib/barber-user'
 import { ROLES } from '../utils/constants'
 import { STATUS_META } from '../utils/constants'
 
@@ -74,6 +75,7 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
         sort: status === 'cancelled' ? '-fromDate' : 'fromDate',
         limit: 50,
         overrideAccess: false,
+        req,
       })
       return res.docs
     }
@@ -82,6 +84,7 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
       findMy(),
       findMy(),
       findMy('cancelled'),
+      // `req` threads the authenticated user through to access control.
       req.payload.find({
         collection: 'notifications',
         depth: 0,
@@ -89,6 +92,7 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
         sort: '-createdAt',
         limit: 20,
         overrideAccess: false,
+        req,
       }),
     ])
 
@@ -112,11 +116,17 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
   handler: async (req) => {
     dashboardAuth(req, [ROLES.BARBER])
     const userId = req.user!.id
-    const barberId = String(req.user!.activeBarber)
+    const barberId = await getBarberIdForUser(req.payload, userId)
     if (!barberId) throw new APIError('Barber profile not found', 404)
 
     const [barber, appointmentsRes, reviews, notifications] = await Promise.all([
-      req.payload.findByID({ collection: 'barbers', id: barberId, depth: 1, overrideAccess: false }),
+      req.payload.findByID({
+        collection: 'barbers',
+        id: barberId,
+        depth: 1,
+        overrideAccess: false,
+        req,
+      }),
       req.payload.find({
         collection: 'appointments',
         depth: 1,
@@ -124,6 +134,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         sort: 'fromDate',
         limit: 200,
         overrideAccess: false,
+        req,
       }),
       req.payload.find({
         collection: 'reviews',
@@ -132,6 +143,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         sort: '-createdAt',
         limit: 20,
         overrideAccess: false,
+        req,
       }),
       req.payload.find({
         collection: 'notifications',
@@ -140,6 +152,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         sort: '-createdAt',
         limit: 20,
         overrideAccess: false,
+        req,
       }),
     ])
 

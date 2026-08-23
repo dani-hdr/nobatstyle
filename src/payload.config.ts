@@ -15,6 +15,7 @@ import { Barbers } from './collections/Barbers'
 import { Services } from './collections/Services'
 import { Appointments } from './collections/Appointments'
 import { Reviews } from './collections/Reviews'
+import { Comments } from './collections/Comments'
 import { Portfolio } from './collections/Portfolio'
 import { Conversations } from './collections/Conversations'
 import { Messages } from './collections/Messages'
@@ -51,6 +52,7 @@ export default buildConfig({
     Services,
     Appointments,
     Reviews,
+    Comments,
     Portfolio,
     Conversations,
     Messages,

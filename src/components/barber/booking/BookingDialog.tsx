@@ -15,6 +15,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import {
   formatDuration,
@@ -23,7 +24,7 @@ import {
 } from '@/lib/barber-profile'
 import { cn } from '@/utils/cn'
 
-import { buildAvailableDays, buildSlotsForDay, defaultAvailable, formatJalaliShort, toFaDigits } from './jalali'
+import { buildAvailableDays, defaultAvailable, formatJalaliShort, jalaliKeyToISODate, toFaDigits } from './jalali'
 import { JalaliCalendar } from './JalaliCalendar'
 
 type BookingDialogProps = {
@@ -43,9 +44,12 @@ export function BookingDialog({
 }: BookingDialogProps) {
   const [step, setStep] = useState(0)
   const [success, setSuccess] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
 
   const [selectedDateKey, setSelectedDateKey] = useState<string>()
   const [selectedServiceId, setSelectedServiceId] = useState<string>()
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>()
   const [selectedTime, setSelectedTime] = useState<string>()
   const [notes, setNotes] = useState('')
 
@@ -58,11 +62,6 @@ export function BookingDialog({
     () => barber.services.find((s) => s.id === selectedServiceId),
     [barber.services, selectedServiceId],
   )
-
-  const slots = useMemo(
-    () => (selectedDateKey ? buildSlotsForDay(selectedDateKey) : []),
-    [selectedDateKey],
-  )
   const selectedDateMeta = availableDays.find((d) => d.key === selectedDateKey)
 
   // Reset whenever the dialog opens
@@ -70,8 +69,11 @@ export function BookingDialog({
     if (open) {
       setStep(0)
       setSuccess(false)
+      setConfirming(false)
+      setConfirmError(null)
       setSelectedDateKey(defaultAvailable(availableDays))
       setSelectedServiceId(initialServiceId)
+      setSelectedAppointmentId(undefined)
       setSelectedTime(undefined)
       setNotes('')
     }
@@ -80,13 +82,19 @@ export function BookingDialog({
   const selectDay = useCallback((key: string, dayAvailable: boolean) => {
     if (!dayAvailable) return
     setSelectedDateKey(key)
+    setSelectedAppointmentId(undefined)
     setSelectedTime(undefined)
+  }, [])
+
+  const selectSlot = useCallback((appointmentId: string, time: string) => {
+    setSelectedAppointmentId(appointmentId)
+    setSelectedTime(time)
   }, [])
 
   const nextEnabled =
     (step === 0 && Boolean(selectedDateKey)) ||
     (step === 1 && Boolean(selectedServiceId)) ||
-    (step === 2 && Boolean(selectedDateKey) && Boolean(selectedTime))
+    (step === 2 && Boolean(selectedDateKey) && Boolean(selectedAppointmentId))
 
   const handleNext = () => {
     if (step === 3) return
@@ -101,8 +109,33 @@ export function BookingDialog({
     setStep((s) => s - 1)
   }
 
-  const confirmBooking = () => {
-    setSuccess(true)
+  /** Reserves the selected appointment window via the backend endpoint. */
+  const confirmBooking = async () => {
+    if (!selectedAppointmentId || confirming) return
+    setConfirming(true)
+    setConfirmError(null)
+    try {
+      const res = await fetch(`/api/appointments/${selectedAppointmentId}/reserve`, {
+        method: 'POST',
+      })
+      if (res.status === 401) {
+        setConfirmError('برای رزرو ابتدا باید وارد حساب کاربری شوید.')
+        return
+      }
+      if (res.status === 409) {
+        setConfirmError('این وقت دیگر در دسترس نیست. لطفاً ساعت دیگری انتخاب کنید.')
+        setSelectedAppointmentId(undefined)
+        setSelectedTime(undefined)
+        setStep(2)
+        return
+      }
+      if (!res.ok) throw new Error('reserve failed')
+      setSuccess(true)
+    } catch {
+      setConfirmError('خطا در ثبت رزرو. دوباره تلاش کنید.')
+    } finally {
+      setConfirming(false)
+    }
   }
 
   return (
@@ -148,15 +181,20 @@ export function BookingDialog({
                 <ServiceStep
                   services={barber.services}
                   selectedId={selectedServiceId}
-                  onSelect={setSelectedServiceId}
+                  onSelect={(id) => {
+                    setSelectedServiceId(id)
+                    setSelectedAppointmentId(undefined)
+                    setSelectedTime(undefined)
+                  }}
                 />
               )}
               {step === 2 && (
                 <TimeStep
+                  barberId={barber.id}
                   selectedDateKey={selectedDateKey}
-                  selectedTime={selectedTime}
-                  slots={slots}
-                  onSelect={setSelectedTime}
+                  selectedServiceId={selectedServiceId}
+                  selectedAppointmentId={selectedAppointmentId}
+                  onSelectSlot={selectSlot}
                 />
               )}
               {step === 3 && (
@@ -172,9 +210,13 @@ export function BookingDialog({
               )}
             </div>
 
+            {confirmError && step === 3 && (
+              <p className="text-destructive px-5 text-xs">{confirmError}</p>
+            )}
+
             <div className="border-t p-4">
               <div className="flex items-center justify-between gap-2">
-                <Button variant="ghost" onClick={handleBack}>
+                <Button variant="ghost" onClick={handleBack} disabled={confirming}>
                   <ChevronRight className="size-4" />
                   {step === 0 ? 'انصراف' : 'قبلی'}
                 </Button>
@@ -185,9 +227,13 @@ export function BookingDialog({
                     <ChevronLeft className="size-4" />
                   </Button>
                 ) : (
-                  <Button onClick={confirmBooking} disabled={!nextEnabled} className="px-6">
+                  <Button
+                    onClick={confirmBooking}
+                    disabled={!nextEnabled || confirming}
+                    className="px-6"
+                  >
                     <CalendarCheck className="size-4" />
-                    تایید رزرو
+                    {confirming ? 'در حال ثبت…' : 'تایید رزرو'}
                   </Button>
                 )}
               </div>
@@ -339,8 +385,8 @@ function ServiceStep({
                 selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted',
               )}
             >
-              <div className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg border">
-                {service.image?.url && (
+              {service.image?.url && (
+                <div className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg border">
                   <Image
                     src={service.image.url}
                     alt={service.image.alt ?? service.name}
@@ -348,18 +394,22 @@ function ServiceStep({
                     sizes="56px"
                     className="object-cover"
                   />
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{service.name}</p>
-                <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
-                  <Clock className="size-3" />
-                  {formatDuration(service.durationMinutes)}
-                </p>
-                <p className={cn('mt-0.5 text-xs', remainingClass(service.remainingSlots))}>
-                  {remainingLabel(service.remainingSlots)}
-                </p>
+                {formatDuration(service.durationMinutes) && (
+                  <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                    <Clock className="size-3" />
+                    {formatDuration(service.durationMinutes)}
+                  </p>
+                )}
+                {remainingLabel(service.remainingSlots) && (
+                  <p className={cn('mt-0.5 text-xs', remainingClass(service.remainingSlots))}>
+                    {remainingLabel(service.remainingSlots)}
+                  </p>
+                )}
               </div>
 
               <span
@@ -368,8 +418,8 @@ function ServiceStep({
                   selected && 'border-primary bg-primary text-primary-foreground',
                 )}
               >
-                  {selected && <Check className="size-3" />}
-                </span>
+                {selected && <Check className="size-3" />}
+              </span>
             </button>
           )
         })}
@@ -378,50 +428,133 @@ function ServiceStep({
   )
 }
 
+type SlotOption = { appointmentId: string; time: string }
+
 function TimeStep({
+  barberId,
   selectedDateKey,
-  selectedTime,
-  slots,
-  onSelect,
+  selectedServiceId,
+  selectedAppointmentId,
+  onSelectSlot,
 }: {
+  barberId: string
   selectedDateKey?: string
-  selectedTime?: string
-  slots: ReturnType<typeof buildSlotsForDay>
-  onSelect: (time: string) => void
+  selectedServiceId?: string
+  selectedAppointmentId?: string
+  onSelectSlot: (appointmentId: string, time: string) => void
 }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [slots, setSlots] = useState<SlotOption[]>([])
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    if (!selectedDateKey || !selectedServiceId) return
+    let cancelled = false
+
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        const date = jalaliKeyToISODate(selectedDateKey!)
+        const res = await fetch(`/api/barbers/${barberId}/appointments?date=${date}`)
+        if (!res.ok) throw new Error('failed')
+        const data = (await res.json()) as {
+          appointments?: {
+            id: string
+            service: string | { id?: string } | null
+            fromDate: string
+            available: boolean
+          }[]
+        }
+
+        const options: SlotOption[] = []
+        const seen = new Set<string>()
+        for (const a of data.appointments ?? []) {
+          if (!a.available) continue
+          const serviceId =
+            typeof a.service === 'object' && a.service !== null
+              ? String(a.service.id ?? '')
+              : a.service != null
+                ? String(a.service)
+                : ''
+          if (serviceId !== selectedServiceId) continue
+
+          const d = new Date(a.fromDate)
+          const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+          if (seen.has(time)) continue
+          seen.add(time)
+          options.push({ time, appointmentId: String(a.id) })
+        }
+        options.sort((a, b) => a.time.localeCompare(b.time))
+        if (!cancelled) setSlots(options)
+      } catch {
+        if (!cancelled) {
+          setError('خطا در دریافت ساعات خالی.')
+          setSlots([])
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [barberId, selectedDateKey, selectedServiceId, reloadKey])
+
+  if (!selectedDateKey || !selectedServiceId) return null
+
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold">انتخاب ساعت</h3>
         <p className="text-muted-foreground text-xs">ساعت مورد نظر خود را انتخاب کنید</p>
       </div>
-      {selectedDateKey && (
-        <p className="text-primary bg-primary/5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium">
-          <CalendarCheck className="size-3.5" />
-          تاریخ انتخابی: {selectedDateKey.split('/').map(toFaDigits).join('/')}
+      <p className="text-primary bg-primary/5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium">
+        <CalendarCheck className="size-3.5" />
+        تاریخ انتخابی: {selectedDateKey.split('/').map(toFaDigits).join('/')}
+      </p>
+
+      {loading ? (
+        <div className="grid grid-cols-3 gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-[46px] rounded-lg" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center">
+          <p className="text-destructive mb-2 text-sm">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+            تلاش مجدد
+          </Button>
+        </div>
+      ) : slots.length === 0 ? (
+        <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
+          برای این خدمت در این روز وقت آزادی ثبت نشده است.
         </p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          {slots.map((slot) => {
+            const selected = slot.appointmentId === selectedAppointmentId
+            return (
+              <button
+                key={slot.appointmentId}
+                type="button"
+                onClick={() => onSelectSlot(slot.appointmentId, slot.time)}
+                className={cn(
+                  'flex cursor-pointer items-center justify-center gap-1 rounded-lg border py-3 text-sm font-medium transition-colors hover:bg-muted',
+                  selected && 'bg-primary text-primary-foreground border-primary hover:bg-primary',
+                )}
+              >
+                <Clock className="size-4" />
+                {toFaDigits(slot.time)}
+              </button>
+            )
+          })}
+        </div>
       )}
-      <div className="grid grid-cols-3 gap-2">
-        {slots.map((slot) => (
-          <button
-            key={slot.time}
-            type="button"
-            disabled={!slot.available}
-            onClick={() => onSelect(slot.time)}
-            className={cn(
-              'flex items-center justify-center gap-1 rounded-lg border py-3 text-sm font-medium transition-colors',
-              !slot.available && 'text-muted-foreground/40 cursor-not-allowed line-through',
-              slot.available &&
-                selectedTime !== slot.time &&
-                'hover:bg-muted cursor-pointer',
-              slot.available && selectedTime === slot.time && 'bg-primary text-primary-foreground border-primary',
-            )}
-          >
-            <Clock className="size-4" />
-            {toFaDigits(slot.time)}
-          </button>
-        ))}
-      </div>
     </div>
   )
 }
@@ -451,7 +584,7 @@ function ReviewStep({
       value: dateMeta ? formatJalaliShort(dateMeta.date) : dateKey,
     },
     { label: 'ساعت', value: time },
-    { label: 'مدت', value: service ? formatDuration(service.durationMinutes) : undefined },
+    { label: 'مدت', value: service ? (formatDuration(service.durationMinutes) ?? undefined) : undefined },
   ].filter((r) => r.value)
 
   return (

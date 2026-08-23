@@ -1,11 +1,12 @@
 import { BarberHero } from '@/components/barber/BarberHero'
+import { BarberComments } from '@/components/barber/BarberComments'
 import { BarberLocation } from '@/components/barber/BarberLocation'
 import { BarberReviews } from '@/components/barber/BarberReviews'
 import { BarberServices } from '@/components/barber/BarberServices'
 import { BookingProvider } from '@/components/barber/booking/booking-context'
 import { StickyBookingCta } from '@/components/barber/StickyBookingCta'
 import { Container } from '@/components/layout/Container'
-import { getBarberProfile, getRelatedBarbers } from '@/lib/barber-profile'
+import { getBarberPageData } from '@/lib/barber-profile.server'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
@@ -15,9 +16,9 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const barber = await getBarberProfile(slug)
+  const barber = await getBarberPageData(slug).then((d) => d?.profile ?? null)
   return {
-    title: barber ? `${barber.shopName} - ${barber.barberName}` : 'آرایشگر',
+    title: barber ? `${barber.shopName}${barber.barberName ? ` - ${barber.barberName}` : ''}` : 'آرایشگر',
     description: barber?.about,
   }
 }
@@ -25,16 +26,16 @@ export async function generateMetadata({
 export default async function BarberPage({ params }: PageProps) {
   const { slug } = await params
 
-  let barber
+  let data
   try {
-    barber = await getBarberProfile(slug)
+    data = await getBarberPageData(slug)
   } catch {
-    barber = null
+    data = null
   }
 
-  if (!barber) notFound()
+  if (!data) notFound()
 
-  const related = getRelatedBarbers()
+  const barber = data.profile
 
   return (
     <BookingProvider barber={barber}>
@@ -49,6 +50,7 @@ export default async function BarberPage({ params }: PageProps) {
           rating={barber.rating}
           ratingMax={barber.ratingMax}
         />
+        <BarberComments barberId={barber.id} comments={barber.comments} />
         <BarberLocation
           address={barber.address}
           region={barber.region}

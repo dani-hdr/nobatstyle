@@ -75,6 +75,7 @@ export interface Config {
     services: Service;
     appointments: Appointment;
     reviews: Review;
+    comments: Comment;
     portfolio: Portfolio;
     conversations: Conversation;
     messages: Message;
@@ -99,6 +100,7 @@ export interface Config {
     services: ServicesSelect<false> | ServicesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
+    comments: CommentsSelect<false> | CommentsSelect<true>;
     portfolio: PortfolioSelect<false> | PortfolioSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
@@ -166,13 +168,6 @@ export interface User {
   hash?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
   password?: string | null;
   collection: 'users';
 }
@@ -278,8 +273,11 @@ export interface Barber {
   location?: [number, number] | null;
   about?: string | null;
   phone?: string | null;
-  avatar?: (string | null) | Media;
   cover?: (string | null) | Media;
+  /**
+   * تصاویر گالری صفحه پروفایل آرایشگر
+   */
+  gallery?: (string | Media)[] | null;
   experienceYears?: number | null;
   isVerified?: boolean | null;
   isActive?: boolean | null;
@@ -302,22 +300,9 @@ export interface Barber {
    */
   services?: (string | Service)[] | null;
   /**
-   * ساعات کاری تکراری هفتگی. هر روز شامل جهت ساعات کاری است.
+   * کاربرانی که مشتری این آرایشگر هستند (به‌صورت خودکار هنگام رزرو اضافه می‌شوند).
    */
-  workingHours?:
-    | {
-        day: 'saturday' | 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
-        enabled?: boolean | null;
-        slots?:
-          | {
-              start: string;
-              end: string;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
+  customers?: (string | User)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -362,6 +347,19 @@ export interface Review {
   customer: string | User;
   rating: number;
   comment?: string | null;
+  status: 'pending' | 'active' | 'rejected';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments".
+ */
+export interface Comment {
+  id: string;
+  barber: string | Barber;
+  author: string | User;
+  content: string;
   status: 'pending' | 'active' | 'rejected';
   updatedAt: string;
   createdAt: string;
@@ -509,6 +507,10 @@ export interface PayloadLockedDocument {
         value: string | Review;
       } | null)
     | ({
+        relationTo: 'comments';
+        value: string | Comment;
+      } | null)
+    | ({
         relationTo: 'portfolio';
         value: string | Portfolio;
       } | null)
@@ -588,13 +590,6 @@ export interface UsersSelect<T extends boolean = true> {
   hash?: T;
   loginAttempts?: T;
   lockUntil?: T;
-  sessions?:
-    | T
-    | {
-        id?: T;
-        createdAt?: T;
-        expiresAt?: T;
-      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -653,8 +648,8 @@ export interface BarbersSelect<T extends boolean = true> {
   location?: T;
   about?: T;
   phone?: T;
-  avatar?: T;
   cover?: T;
+  gallery?: T;
   experienceYears?: T;
   isVerified?: T;
   isActive?: T;
@@ -663,20 +658,7 @@ export interface BarbersSelect<T extends boolean = true> {
   reviewCount?: T;
   appointments?: T;
   services?: T;
-  workingHours?:
-    | T
-    | {
-        day?: T;
-        enabled?: T;
-        slots?:
-          | T
-          | {
-              start?: T;
-              end?: T;
-              id?: T;
-            };
-        id?: T;
-      };
+  customers?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -715,6 +697,18 @@ export interface ReviewsSelect<T extends boolean = true> {
   customer?: T;
   rating?: T;
   comment?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments_select".
+ */
+export interface CommentsSelect<T extends boolean = true> {
+  barber?: T;
+  author?: T;
+  content?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;

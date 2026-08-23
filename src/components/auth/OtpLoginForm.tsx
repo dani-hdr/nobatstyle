@@ -67,7 +67,7 @@ export function OtpLoginForm() {
       setError(res.error ?? 'خطایی رخ داد.')
       return
     }
-    router.push('/')
+    router.push('/dashboard')
     router.refresh()
   }
 

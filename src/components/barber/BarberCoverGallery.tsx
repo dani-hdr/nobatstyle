@@ -2,7 +2,7 @@
 
 import { BadgeCheck } from 'lucide-react'
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import type { BarberImage } from '@/lib/barber-profile'
@@ -22,35 +22,43 @@ export function BarberCoverGallery({
   const [active, setActive] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
-  const allImages = useMemo(() => [coverImage, ...gallery], [coverImage, gallery])
-  const currentUrl = gallery[active]?.url ?? coverImage.url
-
-  const openLightbox = () => {
-    const startIndex = Math.max(
-      0,
-      allImages.findIndex((img) => img.url === currentUrl),
-    )
-    setLightboxIndex(startIndex)
-  }
+  // The cover is only a backdrop; the lightbox cycles through gallery images.
+  const current = gallery[active]
 
   return (
     <div className="relative">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border bg-muted">
-        <button
-          type="button"
-          onClick={openLightbox}
-          aria-label="مشاهده گالری"
-          className="group absolute inset-0 size-full cursor-zoom-in"
-        >
-          <Image
-            src={currentUrl}
-            alt={gallery[active]?.alt ?? coverImage.alt}
-            fill
-            priority
-            sizes="(min-width:1024px) 50vw, 100vw"
-            className="object-cover transition-all duration-300 group-hover:scale-[1.02]"
-          />
-        </button>
+        {/* Cover photo as the box backdrop */}
+        <Image
+          src={coverImage.url}
+          alt=""
+          fill
+          priority
+          sizes="(min-width:1024px) 50vw, 100vw"
+          aria-hidden
+          className="scale-110 object-cover brightness-75 blur-md"
+        />
+        <div className="absolute inset-0 bg-black/10" />
+
+        {current && (
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(active)}
+            aria-label="مشاهده گالری"
+            className="group absolute inset-3 cursor-zoom-in md:inset-5"
+          >
+            <span className="relative block size-full overflow-hidden rounded-xl shadow-lg">
+              <Image
+                src={current.url}
+                alt={current.alt}
+                fill
+                priority
+                sizes="(min-width:1024px) 45vw, 90vw"
+                className="object-cover transition-all duration-300 group-hover:scale-[1.02]"
+              />
+            </span>
+          </button>
+        )}
         {verified && (
           <Badge variant="secondary" className="bg-background/90 absolute top-3 start-3 gap-1 shadow-sm">
             <BadgeCheck className="size-3.5 text-emerald-500" />
@@ -79,7 +87,7 @@ export function BarberCoverGallery({
       )}
 
       <ImageLightbox
-        images={allImages}
+        images={gallery}
         index={lightboxIndex}
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}

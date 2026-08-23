@@ -11,7 +11,8 @@ export type ListBarber = {
   rating?: number | null
   reviewCount?: number | null
   createdAt: string
-  avatar?: ({ url?: string | null; alt?: string | null } | string | null) | null
+  /** Avatar lives on the barber's linked user, not on the barber itself. */
+  user?: { avatar?: ({ url?: string | null; alt?: string | null } | string | number | null) | null } | string | number | null
   city?: ({ id: string; name: string; province?: City['province'] | null } | string | null) | null
 }
 
@@ -48,7 +49,8 @@ export async function getBarbers({
     sort: '-rating',
     limit: BARBERS_PAGE_SIZE,
     page,
-    depth: 1,
+    // depth 2 so barber.user.avatar (media) is populated.
+    depth: 2,
   })
 
   return {
@@ -59,7 +61,7 @@ export async function getBarbers({
       rating: d.rating,
       reviewCount: d.reviewCount,
       createdAt: d.createdAt,
-      avatar: d.avatar,
+      user: d.user,
       city: d.city,
     })),
     total: totalDocs,

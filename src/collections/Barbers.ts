@@ -171,16 +171,20 @@ export const Barbers: CollectionConfig = {
       },
     },
     {
-      name: 'avatar',
-      type: 'upload',
-      relationTo: 'media',
-      label: 'تصویر پروفایل',
-    },
-    {
       name: 'cover',
       type: 'upload',
       relationTo: 'media',
       label: 'تصویر کاور',
+    },
+    {
+      name: 'gallery',
+      type: 'upload',
+      relationTo: 'media',
+      hasMany: true,
+      label: 'گالری تصاویر',
+      admin: {
+        description: 'تصاویر گالری صفحه پروفایل آرایشگر',
+      },
     },
     {
       name: 'experienceYears',
@@ -271,46 +275,15 @@ export const Barbers: CollectionConfig = {
       },
     },
     {
-      name: 'workingHours',
-      type: 'array',
-      label: 'ساعات کاری هفتگی',
-      labels: { singular: 'روز', plural: 'روزهای هفته' },
+      name: 'customers',
+      type: 'relationship',
+      relationTo: 'users',
+      hasMany: true,
+      label: 'مشتریان',
       admin: {
-        description: 'ساعات کاری تکراری هفتگی. هر روز شامل جهت ساعات کاری است.',
+        description:
+          'کاربرانی که مشتری این آرایشگر هستند (به‌صورت خودکار هنگام رزرو اضافه می‌شوند).',
       },
-      fields: [
-        {
-          name: 'day',
-          type: 'select',
-          required: true,
-          label: 'روز',
-          options: [
-            { label: 'شنبه', value: 'saturday' },
-            { label: 'یکشنبه', value: 'sunday' },
-            { label: 'دوشنبه', value: 'monday' },
-            { label: 'سه‌شنبه', value: 'tuesday' },
-            { label: 'چهارشنبه', value: 'wednesday' },
-            { label: 'پنجشنبه', value: 'thursday' },
-            { label: 'جمعه', value: 'friday' },
-          ],
-        },
-        {
-          name: 'enabled',
-          type: 'checkbox',
-          defaultValue: true,
-          label: 'فعال بودن روز',
-        },
-        {
-          name: 'slots',
-          type: 'array',
-          label: 'بازه‌های کاری',
-          labels: { singular: 'بازه کاری', plural: 'بازه‌های کاری' },
-          fields: [
-            { name: 'start', type: 'text', required: true, label: 'شروع' },
-            { name: 'end', type: 'text', required: true, label: 'پایان' },
-          ],
-        },
-      ],
     },
   ],
 }

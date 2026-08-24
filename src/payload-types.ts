@@ -74,9 +74,7 @@ export interface Config {
     barbers: Barber;
     services: Service;
     appointments: Appointment;
-    reviews: Review;
     comments: Comment;
-    portfolio: Portfolio;
     conversations: Conversation;
     messages: Message;
     notifications: Notification;
@@ -100,9 +98,7 @@ export interface Config {
     barbers: BarbersSelect<false> | BarbersSelect<true>;
     services: ServicesSelect<false> | ServicesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
-    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
-    portfolio: PortfolioSelect<false> | PortfolioSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
@@ -281,12 +277,6 @@ export interface Barber {
    */
   gallery?: (string | Media)[] | null;
   experienceYears?: number | null;
-  isVerified?: boolean | null;
-  isActive?: boolean | null;
-  /**
-   * نمایش در بخش «آرایشگران ویژه» صفحه اصلی
-   */
-  isFeatured?: boolean | null;
   rating?: number | null;
   reviewCount?: number | null;
   /**
@@ -341,41 +331,15 @@ export interface Service {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "reviews".
- */
-export interface Review {
-  id: string;
-  barber: string | Barber;
-  customer: string | User;
-  rating: number;
-  comment?: string | null;
-  status: 'pending' | 'active' | 'rejected';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments".
  */
 export interface Comment {
   id: string;
   barber: string | Barber;
   author: string | User;
+  rating: number;
   content: string;
   status: 'pending' | 'active' | 'rejected';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "portfolio".
- */
-export interface Portfolio {
-  id: string;
-  title: string;
-  barber: string | Barber;
-  image: string | Media;
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -524,16 +488,8 @@ export interface PayloadLockedDocument {
         value: string | Appointment;
       } | null)
     | ({
-        relationTo: 'reviews';
-        value: string | Review;
-      } | null)
-    | ({
         relationTo: 'comments';
         value: string | Comment;
-      } | null)
-    | ({
-        relationTo: 'portfolio';
-        value: string | Portfolio;
       } | null)
     | ({
         relationTo: 'conversations';
@@ -676,9 +632,6 @@ export interface BarbersSelect<T extends boolean = true> {
   cover?: T;
   gallery?: T;
   experienceYears?: T;
-  isVerified?: T;
-  isActive?: T;
-  isFeatured?: T;
   rating?: T;
   reviewCount?: T;
   appointments?: T;
@@ -715,38 +668,14 @@ export interface AppointmentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "reviews_select".
- */
-export interface ReviewsSelect<T extends boolean = true> {
-  barber?: T;
-  customer?: T;
-  rating?: T;
-  comment?: T;
-  status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments_select".
  */
 export interface CommentsSelect<T extends boolean = true> {
   barber?: T;
   author?: T;
+  rating?: T;
   content?: T;
   status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "portfolio_select".
- */
-export interface PortfolioSelect<T extends boolean = true> {
-  title?: T;
-  barber?: T;
-  image?: T;
-  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }

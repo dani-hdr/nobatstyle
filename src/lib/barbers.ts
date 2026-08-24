@@ -27,7 +27,7 @@ export type BarberFilters = {
 
 /**
  * Queries barbers for the listing page with optional filters (search query,
- * city, service) and pagination. Returns active barbers only, sorted by rating.
+ * city, service) and pagination, sorted by rating.
  */
 export async function getBarbers({
   q,
@@ -37,7 +37,7 @@ export async function getBarbers({
 }: BarberFilters): Promise<{ docs: ListBarber[]; total: number; totalPages: number }> {
   const payload = await getPayload({ config })
 
-  const and: Where[] = [{ isActive: { equals: true } }]
+  const and: Where[] = []
   if (q?.trim()) and.push({ shopName: { contains: q.trim() } })
   if (city) and.push({ city: { equals: city } })
   if (service) and.push({ services: { equals: service } })

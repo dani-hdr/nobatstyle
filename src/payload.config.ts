@@ -14,9 +14,7 @@ import { Cities } from './collections/Cities'
 import { Barbers } from './collections/Barbers'
 import { Services } from './collections/Services'
 import { Appointments } from './collections/Appointments'
-import { Reviews } from './collections/Reviews'
 import { Comments } from './collections/Comments'
-import { Portfolio } from './collections/Portfolio'
 import { Conversations } from './collections/Conversations'
 import { Messages } from './collections/Messages'
 import { Notifications } from './collections/Notifications'
@@ -35,6 +33,7 @@ import {
 import { profileGetEndpoint, profileUpdateEndpoint, profileAvatarEndpoint } from './endpoints/profile'
 import { requestOtpEndpoint, verifyOtpEndpoint } from './endpoints/otp'
 import { conversationsListEndpoint, conversationCreateEndpoint } from './endpoints/chat'
+import { commentsListEndpoint } from './endpoints/comments'
 import {
   barberSubscriptionGetEndpoint,
   barberSubscriptionPurchaseEndpoint,
@@ -58,9 +57,7 @@ export default buildConfig({
     Barbers,
     Services,
     Appointments,
-    Reviews,
     Comments,
-    Portfolio,
     Conversations,
     Messages,
     Notifications,
@@ -84,6 +81,7 @@ export default buildConfig({
     verifyOtpEndpoint,
     conversationsListEndpoint,
     conversationCreateEndpoint,
+    commentsListEndpoint,
     barberSubscriptionGetEndpoint,
     barberSubscriptionPurchaseEndpoint,
   ],

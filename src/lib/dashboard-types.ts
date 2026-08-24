@@ -19,7 +19,6 @@ export type DashBarber = {
   shopSlug?: string | null
   rating?: number | null
   reviewCount?: number | null
-  isVerified?: boolean
   city?: Ref<{ id: string; name?: string }>
 }
 
@@ -47,11 +46,12 @@ export type DashNotification = {
   createdAt: string
 }
 
-export type DashReview = {
+export type DashComment = {
   id: string
-  rating: number
-  comment?: string | null
-  customer?: Ref<DashUser>
+  content: string
+  rating?: number | null
+  author?: Ref<DashUser>
+  status?: string
   createdAt: string
 }
 
@@ -74,7 +74,7 @@ export type BarberDashboardData = {
   barber: DashBarber
   appointments: DashAppointment[]
   newRequests: DashAppointment[]
-  reviews: DashReview[]
+  comments: DashComment[]
   notifications: DashNotification[]
   subscription: DashSubscriptionState
   statistics: {

@@ -4,8 +4,8 @@ import { ROLES } from '../utils/constants'
 
 /**
  * Central barber profile. Rating & reviewCount are denormalized and kept in
- * sync by an afterChange hook on the `reviews` collection so the API can sort
- * directly by rating (featured / highly rated) without aggregation.
+ * sync by afterChange hooks on the `comments` collection so the API can sort
+ * directly by rating (highly rated) without aggregation.
  */
 export const Barbers: CollectionConfig = {
   slug: 'barbers',
@@ -16,7 +16,7 @@ export const Barbers: CollectionConfig = {
   admin: {
     useAsTitle: 'shopName',
     group: 'آرایشگاه‌ها',
-    defaultColumns: ['shopName', 'user', 'city', 'rating', 'isVerified', 'isActive'],
+    defaultColumns: ['shopName', 'user', 'city', 'rating'],
   },
   access: {
     read: () => true,
@@ -79,23 +79,6 @@ export const Barbers: CollectionConfig = {
             available: a.status === 'available',
           })),
         })
-      },
-    },
-    {
-      // GET /api/barbers/:id/reviews — active reviews, newest first.
-      path: '/:id/reviews',
-      method: 'get',
-      handler: async (req) => {
-        const id = String(req.routeParams?.['id'])
-        const res = await req.payload.find({
-          collection: 'reviews',
-          depth: 2,
-          where: { and: [{ barber: { equals: id } }, { status: { equals: 'active' } }] },
-          sort: '-createdAt',
-          limit: 50,
-          overrideAccess: false,
-        })
-        return Response.json(res)
       },
     },
   ],
@@ -194,36 +177,6 @@ export const Barbers: CollectionConfig = {
       label: 'سال سابقه',
       admin: {
         position: 'sidebar',
-      },
-    },
-    {
-      name: 'isVerified',
-      type: 'checkbox',
-      defaultValue: false,
-      label: 'تأیید شده',
-      admin: {
-        position: 'sidebar',
-      },
-    },
-    {
-      name: 'isActive',
-      type: 'checkbox',
-      defaultValue: true,
-      index: true,
-      label: 'فعال',
-      admin: {
-        position: 'sidebar',
-      },
-    },
-    {
-      name: 'isFeatured',
-      type: 'checkbox',
-      defaultValue: false,
-      index: true,
-      label: 'ویژه',
-      admin: {
-        position: 'sidebar',
-        description: 'نمایش در بخش «آرایشگران ویژه» صفحه اصلی',
       },
     },
     {

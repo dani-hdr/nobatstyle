@@ -109,3 +109,48 @@ export async function canAcceptBookings(payload: Payload, barberId: string): Pro
   const state = await getBarberSubscriptionState(payload, barberId)
   return state.mode !== 'expired'
 }
+
+/**
+ * Ids of the given barbers whose trial/subscription has lapsed (i.e. they
+ * cannot accept bookings). One batched subscriptions query + one settings read.
+ */
+export async function getExpiredBarberIds(
+  payload: Payload,
+  barbers: { id: string; createdAt?: string | null }[],
+): Promise<Set<string>> {
+  const expired = new Set<string>()
+  if (barbers.length === 0) return expired
+
+  const nowIso = new Date().toISOString()
+  const [subRes, monetization] = await Promise.all([
+    payload.find({
+      collection: 'subscriptions',
+      depth: 0,
+      where: {
+        and: [
+          { barber: { in: barbers.map((b) => b.id) } },
+          { status: { equals: 'active' } },
+          { expiresAt: { greater_than: nowIso } },
+        ],
+      },
+      limit: 1000,
+      overrideAccess: true,
+    }),
+    getMonetizationSettings(payload),
+  ])
+
+  const covered = new Set<string>(
+    subRes.docs.map((s) =>
+      String(typeof s.barber === 'object' && s.barber ? s.barber.id : s.barber),
+    ),
+  )
+
+  for (const b of barbers) {
+    if (covered.has(b.id)) continue
+    if (!monetization.enforceSubscription) continue
+    const createdAt = b.createdAt ?? nowIso
+    if (new Date(createdAt).getTime() + monetization.trialDays * DAY_MS > Date.now()) continue
+    expired.add(b.id)
+  }
+  return expired
+}

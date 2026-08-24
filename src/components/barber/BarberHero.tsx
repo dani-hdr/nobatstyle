@@ -18,7 +18,6 @@ import { cn } from '@/utils/cn'
 import { Container } from '../layout/Container'
 import { BarberCoverGallery } from './BarberCoverGallery'
 import { BarberStats } from './BarberStats'
-import { StatusBadge } from './StatusBadge'
 import { BookingTrigger } from './booking/BookingTrigger'
 
 export function BarberHero({ barber }: { barber: BarberProfile }) {
@@ -26,8 +25,16 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
     <div className="grid items-stretch gap-6 lg:grid-cols-2">
       {/* Profile info */}
       <Card className="relative overflow-hidden rounded-none md:rounded-2xl ">
-        <div className='absolute inset-0 w-full h-full bg-linear-to-t from-primary  to-transparent z-10'></div>
-        <Image className='absolute object-cover w-full h-full inset-0 z-0' alt='' src="/barber/nobat-rel1.svg" width={1000} height={1000} />
+        <Image
+          src={barber.coverImage?.url}
+          alt=""
+          fill
+          priority
+          sizes="(min-width:1024px) 50vw, 100vw"
+          aria-hidden
+          className="z-0 object-cover"
+        />
+        <div className='bg-linear-to-tl from-primary/90 via-primary/80  to-primary/20 absolute inset-0 w-full h-full z-10'></div>
         <CardHeader className="gap-2 z-20 relative text-muted">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -43,7 +50,7 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex flex-col shrink-0 items-center gap-1 absolute left-5 top-0">
               <MessageButton barberId={barber.id} />
               <ShareButton shopName={barber.shopName} />
               <LikeButton />
@@ -70,7 +77,6 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
 
         <CardContent className="space-y-4 z-20 relative ">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={barber.status} />
             {barber.isYourBarber && (
               <Badge className="gap-1 border border-emerald-400/40 bg-emerald-500/20 text-emerald-100">
                 <UserCheck className="size-3.5" />
@@ -97,9 +103,7 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
       </Card>
       <Container className='md:px-0'>
         <BarberCoverGallery
-          coverImage={barber.coverImage}
           gallery={barber.gallery}
-          verified={barber.verified}
         />
       </Container>
 
@@ -113,7 +117,7 @@ function toFa(v: number): string {
 
 function MessageButton({ barberId }: { barberId: string }) {
   return (
-    <Tooltip>
+    <Tooltip >
       <TooltipTrigger asChild>
         <Button
           asChild
@@ -127,7 +131,7 @@ function MessageButton({ barberId }: { barberId: string }) {
           </Link>
         </Button>
       </TooltipTrigger>
-      <TooltipContent>ارسال پیام</TooltipContent>
+      <TooltipContent side='right'>ارسال پیام</TooltipContent>
     </Tooltip>
   )
 }
@@ -167,7 +171,7 @@ function ShareButton({ shopName }: { shopName: string }) {
           {copied ? <Check className="size-4.5" /> : <Share2 className="size-4.5" />}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{copied ? 'کپی شد' : 'اشتراک‌گذاری'}</TooltipContent>
+      <TooltipContent side='right'>{copied ? 'کپی شد' : 'اشتراک‌گذاری'}</TooltipContent>
     </Tooltip>
   )
 }
@@ -191,7 +195,7 @@ function LikeButton() {
           <Heart className={cn('size-4.5', liked && 'fill-rose-500 text-rose-500')} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{liked ? 'در علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی'}</TooltipContent>
+      <TooltipContent side='right'>{liked ? 'در علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی'}</TooltipContent>
     </Tooltip>
   )
 }

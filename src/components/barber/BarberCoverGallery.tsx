@@ -1,23 +1,17 @@
 'use client'
 
-import { BadgeCheck } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 
-import { Badge } from '@/components/ui/badge'
 import type { BarberImage } from '@/lib/barber-profile'
 import { cn } from '@/utils/cn'
 
 import { ImageLightbox } from './ImageLightbox'
 
 export function BarberCoverGallery({
-  coverImage,
   gallery,
-  verified,
 }: {
-  coverImage: BarberImage
   gallery: BarberImage[]
-  verified: boolean
 }) {
   const [active, setActive] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -28,18 +22,6 @@ export function BarberCoverGallery({
   return (
     <div className="relative">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border bg-muted">
-        {/* Cover photo as the box backdrop */}
-        <Image
-          src={coverImage.url}
-          alt=""
-          fill
-          priority
-          sizes="(min-width:1024px) 50vw, 100vw"
-          aria-hidden
-          className="scale-110 object-cover brightness-75 blur-md"
-        />
-        <div className="absolute inset-0 bg-black/10" />
-
         {current && (
           <button
             type="button"
@@ -58,12 +40,6 @@ export function BarberCoverGallery({
               />
             </span>
           </button>
-        )}
-        {verified && (
-          <Badge variant="secondary" className="bg-background/90 absolute top-3 start-3 gap-1 shadow-sm">
-            <BadgeCheck className="size-3.5 text-emerald-500" />
-            تایید شده
-          </Badge>
         )}
       </div>
 

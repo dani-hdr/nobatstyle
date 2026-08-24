@@ -3,13 +3,11 @@
 import { Award, ExternalLink, Star, Store, UserRound, Users } from 'lucide-react'
 import Link from 'next/link'
 
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { faDate } from '@/lib/dashboard-types'
 
-import { BarberPortfolioManager } from './BarberPortfolioManager'
 import { BarberServicesPicker } from './BarberServicesPicker'
 import { BarberShopSettings } from './BarberShopSettings'
 import { InfoRow, ProfileSkeleton } from './CustomerProfile'
@@ -42,7 +40,6 @@ export function BarberProfile() {
     <div className="space-y-8">
       <ProfileHeaderCard
         user={data.user}
-        badge={barber?.isVerified ? <Badge variant="success">تأیید شده</Badge> : undefined}
         subtitle={
           barber?.shopSlug ? (
             <Link
@@ -58,7 +55,7 @@ export function BarberProfile() {
       />
 
       {/* Stats */}
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard
           icon={<Star className="size-5" />}
           label="امتیاز"
@@ -74,18 +71,12 @@ export function BarberProfile() {
           label="سال سابقه"
           value={(barber?.experienceYears ?? 0).toLocaleString('fa-IR')}
         />
-        <StatCard
-          icon={<Store className="size-5" />}
-          label="وضعیت"
-          value={barber ? (barber.isActive ? 'فعال' : 'غیرفعال') : 'بدون آرایشگاه'}
-        />
       </section>
 
       <Tabs defaultValue="shop" className="gap-6">
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="shop">آرایشگاه</TabsTrigger>
           <TabsTrigger value="services">خدمات</TabsTrigger>
-          <TabsTrigger value="portfolio">نمونه‌کارها</TabsTrigger>
           <TabsTrigger value="account">حساب کاربری</TabsTrigger>
         </TabsList>
 
@@ -98,18 +89,6 @@ export function BarberProfile() {
             <BarberServicesPicker
               catalog={data.servicesCatalog ?? []}
               selectedIds={barber.serviceIds}
-              onUpdated={reload}
-            />
-          ) : (
-            <EmptyShopHint />
-          )}
-        </TabsContent>
-
-        <TabsContent value="portfolio">
-          {barber ? (
-            <BarberPortfolioManager
-              barberId={barber.id}
-              items={data.portfolio}
               onUpdated={reload}
             />
           ) : (

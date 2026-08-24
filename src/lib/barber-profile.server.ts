@@ -12,11 +12,10 @@ import type {
   City,
   Comment as CommentDoc,
   Media,
-  Review as ReviewDoc,
   Service as ServiceDoc,
 } from '@/payload-types'
 
-import { getBarberSubscriptionState } from './subscriptions.server'
+import { getBarberSubscriptionState, getExpiredBarberIds } from './subscriptions.server'
 import type {
   BarberImage,
   BarberProfile,
@@ -27,6 +26,8 @@ import type {
 const FALLBACK_COVER: BarberImage = { url: '/barber/nobat-cover.svg', alt: '' }
 const BOOKING_WINDOW_DAYS = 2 // today + tomorrow
 const COMMENT_STATUSES = ['active'] as const
+/** Comments rendered server-side; the rest loads via /api/comments pagination. */
+export const COMMENTS_PAGE_SIZE = 5
 
 function toImg(
   m: Media | string | number | null | undefined,
@@ -53,7 +54,7 @@ async function getCurrentUserId(payload: Payload): Promise<string | null> {
 
 /**
  * Loads the full barber page payload for a slug: profile plus related barbers.
- * Returns null when no active barber matches.
+ * Returns null when no barber matches.
  */
 export async function getBarberPageData(
   slug: string,
@@ -65,7 +66,7 @@ export async function getBarberPageData(
     depth: 2,
     limit: 1,
     where: {
-      and: [{ shopSlug: { equals: slug } }, { isActive: { equals: true } }],
+      and: [{ shopSlug: { equals: slug } }],
     },
   })
   const barber = docs[0]
@@ -80,7 +81,7 @@ export async function getBarberPageData(
   const endOfToday = new Date(startOfToday)
   endOfToday.setDate(endOfToday.getDate() + 1)
 
-  const [serviceRes, portfolioRes, reviewsRes, commentsRes, appointmentsToday, relatedRes] = await Promise.all([
+  const [serviceRes, commentsRes, appointmentsToday, relatedRes] = await Promise.all([
     serviceIds.length > 0
       ? payload.find({
           collection: 'services',
@@ -91,20 +92,6 @@ export async function getBarberPageData(
         })
       : Promise.resolve({ docs: [] as ServiceDoc[] }),
     payload.find({
-      collection: 'portfolio',
-      depth: 1,
-      where: { and: [{ barber: { equals: barberId } }, { isActive: { equals: true } }] },
-      sort: '-createdAt',
-      limit: 24,
-    }),
-    payload.find({
-      collection: 'reviews',
-      depth: 2,
-      where: { and: [{ barber: { equals: barberId } }, { status: { equals: 'active' } }] },
-      sort: '-createdAt',
-      limit: 20,
-    }),
-    payload.find({
       collection: 'comments',
       depth: 1,
       where: {
@@ -114,7 +101,7 @@ export async function getBarberPageData(
         ],
       },
       sort: '-createdAt',
-      limit: 20,
+      limit: COMMENTS_PAGE_SIZE,
     }),
     payload.count({
       collection: 'appointments',
@@ -136,7 +123,6 @@ export async function getBarberPageData(
       depth: 2,
       where: {
         and: [
-          { isActive: { equals: true } },
           { id: { not_equals: barberId } },
           ...(cityObj ? [{ city: { equals: String(cityObj.id) } }] : []),
         ],
@@ -151,7 +137,6 @@ export async function getBarberPageData(
   const cover = toImg(barber.cover, barber.shopName) ?? FALLBACK_COVER
   const avatar =
     toImg(userObj?.avatar, userObj?.name || barber.shopName) ?? undefined
-  const status: BarberProfile['status'] = 'away'
 
   const currentUserId = await getCurrentUserId(payload)
   const customerIds = (barber.customers ?? []).map((c) =>
@@ -177,7 +162,6 @@ export async function getBarberPageData(
     rating: barber.rating ?? 0,
     ratingMax: 5,
     reviewCount: barber.reviewCount ?? 0,
-    verified: Boolean(barber.isVerified),
     city: cityObj?.name ?? '',
     address: barber.address ?? cityObj?.name ?? '',
     coordinates: barber.location
@@ -189,7 +173,6 @@ export async function getBarberPageData(
     gallery: (barber.gallery ?? [])
       .map((m) => toImg(m, barber.shopName))
       .filter((i): i is BarberImage => i !== null),
-    status,
     isYourBarber,
     about: barber.about ?? undefined,
     stats: [
@@ -219,33 +202,27 @@ export async function getBarberPageData(
       description: s.description ?? undefined,
       image: toImg(s.icon, s.name) ?? undefined,
     })),
-    portfolio: portfolioRes.docs
-      .map((p) => toImg(p.image, p.title))
-      .filter((i): i is BarberImage => i !== null),
-    reviews: reviewsRes.docs.map((r: ReviewDoc) => {
-      const customer = typeof r.customer === 'object' ? r.customer : null
-      return {
-        id: String(r.id),
-        customerName: customer?.name || customer?.username || 'مشتری',
-        rating: r.rating,
-        text: r.comment ?? '',
-        date: r.createdAt,
-        avatar: toImg(customer?.avatar, customer?.name ?? '') ?? undefined,
-      }
-    }),
     comments: commentsRes.docs.map((c: CommentDoc) => {
       const author = typeof c.author === 'object' ? c.author : null
       return {
         id: String(c.id),
-        authorName: author?.name || author?.username || 'کاربر',
+        // Never fall back to username — it is the author's phone number.
+        authorName: author?.name?.trim() || 'کاربر',
+        rating: c.rating ?? undefined,
         text: c.content,
         date: c.createdAt,
       }
     }),
+    commentsTotal: commentsRes.totalDocs,
     availabilityDays: BOOKING_WINDOW_DAYS,
     bookingState: bookingSuspended ? 'pending' : 'booking',
     statusNote: bookingSuspended ? 'رزرو نوبت در این آرایشگاه موقتاً غیرفعال است' : undefined,
   }
+
+  const expiredRelated = await getExpiredBarberIds(
+    payload,
+    relatedRes.docs.map((b) => ({ id: String(b.id), createdAt: b.createdAt })),
+  )
 
   const related: RelatedBarber[] = relatedRes.docs.map((b) => {
     const relUser = typeof b.user === 'object' && b.user !== null ? b.user : null
@@ -264,7 +241,7 @@ export async function getBarberPageData(
       city: relCity?.name ?? '',
       avatar: relAvatar,
       mainService: firstService?.name ?? '',
-      bookingState: 'booking',
+      bookingState: expiredRelated.has(String(b.id)) ? 'pending' : 'booking',
     }
   })
 

@@ -5,7 +5,7 @@ import { getCities } from '@/lib/barber-search'
 import { getHomeContent } from '@/lib/home'
 
 export default async function HomePage() {
-  const [{ hero, stats, whyUs, popularServices }, cities] = await Promise.all([
+  const [{ hero, stats, whyUs, services }, cities] = await Promise.all([
     getHomeContent(),
     getCities(),
   ])
@@ -13,7 +13,7 @@ export default async function HomePage() {
   return (
     <>
       <Hero hero={hero} stats={stats} cities={cities} />
-      <PopularServices services={popularServices} />
+      <PopularServices services={services} />
       <WhyUs items={whyUs} />
     </>
   )

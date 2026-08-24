@@ -2,7 +2,6 @@
 
 import {
   AlertTriangle,
-  BadgeCheck,
   CalendarClock,
   CalendarX2,
   ClipboardList,
@@ -76,9 +75,6 @@ export function BarberDashboard({ userName }: { userName?: string }) {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight md:text-3xl">
             {data.barber.shopName}
-            {data.barber.isVerified && (
-              <BadgeCheck className="size-5.5 text-emerald-500" />
-            )}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             {userName ? `${userName} عزیز،` : ''} پنل مدیریت آرایشگاه شما
@@ -206,34 +202,32 @@ export function BarberDashboard({ userName }: { userName?: string }) {
         </Card>
       </section>
 
-      {/* Reviews */}
+      {/* Latest comments */}
       <section className="space-y-4">
-        <SectionTitle icon={Star} title="آخرین بازخوردها" />
-        {data.reviews.length === 0 ? (
+        <SectionTitle icon={Star} title="آخرین دیدگاه‌ها" />
+        {data.comments.length === 0 ? (
           <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            هنوز بازخوردی ثبت نشده است.
+            هنوز دیدگاهی ثبت نشده است.
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {data.reviews.slice(0, 6).map((r) => {
-              const customer = typeof r.customer === 'object' ? r.customer : null
+            {data.comments.slice(0, 6).map((c) => {
+              const author = typeof c.author === 'object' ? c.author : null
               return (
-                <Card key={r.id} className="py-0">
+                <Card key={c.id} className="py-0">
                   <CardContent className="px-4 py-4">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold">
-                        {customer?.name || customer?.username || 'مشتری'}
-                      </span>
-                      <span className="flex items-center gap-1 text-sm font-bold">
-                        <Star className="size-4 fill-amber-400 text-amber-400" />
-                        {r.rating.toLocaleString('fa-IR')}
-                      </span>
+                      <span className="font-semibold">{author?.name || 'کاربر'}</span>
+                      {typeof c.rating === 'number' && (
+                        <span className="flex items-center gap-1 text-sm font-bold">
+                          <Star className="size-4 fill-amber-400 text-amber-400" />
+                          {c.rating.toLocaleString('fa-IR')}
+                        </span>
+                      )}
                     </div>
-                    {r.comment && (
-                      <p className="text-muted-foreground mt-1.5 text-sm leading-6">{r.comment}</p>
-                    )}
+                    <p className="text-muted-foreground mt-1.5 text-sm leading-6">{c.content}</p>
                     <span className="text-muted-foreground mt-1 block text-xs">
-                      {faDate(r.createdAt)}
+                      {faDate(c.createdAt)}
                     </span>
                   </CardContent>
                 </Card>

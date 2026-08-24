@@ -10,7 +10,6 @@ import type { ProvinceGroup } from '@/lib/barber-search'
 import type { Viewer } from '@/lib/viewer.server'
 import { cn } from '@/utils/cn'
 import { Container } from './Container'
-import { DesktopNav } from './DesktopNav'
 import { Logo } from './Logo'
 import { MobileHeader } from './MobileHeader'
 import type { NavItem } from './nav-items'
@@ -53,7 +52,7 @@ export function Header({
             <Logo siteName={siteName} logo={logo} />
           </div>
 
-          <DesktopNav items={items} />
+
 
           <div className="flex items-center gap-2">
             <BarberSearch

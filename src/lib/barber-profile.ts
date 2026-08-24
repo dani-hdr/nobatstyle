@@ -31,20 +31,10 @@ export type BarberService = {
   remainingSlots?: number
 }
 
-export type BarberReview = {
-  id: string
-  customerName: string
-  rating: number
-  text: string
-  /** ISO date */
-  date: string
-  avatar?: BarberImage
-  verifiedBooking?: boolean
-}
-
 export type BarberComment = {
   id: string
   authorName: string
+  rating?: number
   text: string
   /** ISO date */
   date: string
@@ -58,7 +48,6 @@ export type BarberProfile = {
   rating: number
   ratingMax: number
   reviewCount: number
-  verified: boolean
   city: string
   region?: string
   address: string
@@ -67,16 +56,15 @@ export type BarberProfile = {
   avatar?: BarberImage
   coverImage: BarberImage
   gallery: BarberImage[]
-  status: 'open' | 'away' | 'closed'
-  statusNote?: string
   /** The signed-in visitor is one of this barber's customers. */
   isYourBarber?: boolean
+  statusNote?: string
   about?: string
   stats: BarberStat[]
   services: BarberService[]
-  portfolio: BarberImage[]
-  reviews: BarberReview[]
   comments: BarberComment[]
+  /** Total active comments (comments holds only the first page). */
+  commentsTotal: number
   /** How many days ahead booking is open (today included) */
   availabilityDays: number
   bookingState: 'booking' | 'request' | 'pending'
@@ -94,11 +82,9 @@ export type RelatedBarber = {
   bookingState: 'booking' | 'request' | 'pending'
 }
 
-/** How many services/portfolio/reviews to show before the «مشاهده همه» reveal. */
+/** How many services to show before the «مشاهده همه» reveal. */
 export const PREVIEW_LIMITS = {
   services: 6,
-  portfolio: 8,
-  reviews: 3,
 } as const
 
 export function formatPrice(price?: number | null): string | null {

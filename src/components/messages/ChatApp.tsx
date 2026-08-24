@@ -8,8 +8,8 @@ import {
   MessagesSquare,
   SendHorizontal,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -78,7 +78,7 @@ export function ChatApp({ me }: { me: MeInfo }) {
     convos?.find((c) => c.id === activeId) ?? (activeId ? pendingConvo : null)
 
   return (
-    <div className="bg-background border-border mx-auto flex w-full overflow-hidden border-y md:my-8 md:h-[calc(100dvh-11rem)] md:max-w-5xl md:min-h-[520px] md:rounded-3xl md:border md:shadow-sm h-[calc(100dvh-8rem-env(safe-area-inset-bottom))]">
+    <div className="bg-background border-border mx-auto flex w-full overflow-hidden border-y md:my-8 md:h-[calc(100dvh-11rem)] md:max-w-5xl md:min-h-[520px] md:rounded-3xl md:border md:shadow-sm min-h-screen">
       {/* Conversation list */}
       <aside
         className={cn(

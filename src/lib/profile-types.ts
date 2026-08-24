@@ -33,15 +33,6 @@ export type ProfileBarber = {
   serviceIds: string[]
   rating: number
   reviewCount: number
-  isVerified: boolean
-  isActive: boolean
-}
-
-export type ProfilePortfolioItem = {
-  id: string
-  title: string
-  isActive: boolean
-  image: ProfileImage | null
 }
 
 export type CatalogService = {
@@ -52,7 +43,6 @@ export type CatalogService = {
 export type ProfileData = {
   user: ProfileUser
   barber: ProfileBarber | null
-  portfolio: ProfilePortfolioItem[]
   servicesCatalog?: CatalogService[]
 }
 

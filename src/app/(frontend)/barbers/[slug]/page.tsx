@@ -1,7 +1,6 @@
 import { BarberHero } from '@/components/barber/BarberHero'
 import { BarberComments } from '@/components/barber/BarberComments'
 import { BarberLocation } from '@/components/barber/BarberLocation'
-import { BarberReviews } from '@/components/barber/BarberReviews'
 import { BarberServices } from '@/components/barber/BarberServices'
 import { BookingProvider } from '@/components/barber/booking/booking-context'
 import { StickyBookingCta } from '@/components/barber/StickyBookingCta'
@@ -45,12 +44,13 @@ export default async function BarberPage({ params }: PageProps) {
 
       <Container className="space-y-12 py-6 md:py-10">
         <BarberServices services={barber.services} />
-        <BarberReviews
-          reviews={barber.reviews}
+        <BarberComments
+          barberId={barber.id}
+          comments={barber.comments}
+          total={barber.commentsTotal}
           rating={barber.rating}
-          ratingMax={barber.ratingMax}
+          reviewCount={barber.reviewCount}
         />
-        <BarberComments barberId={barber.id} comments={barber.comments} />
         <BarberLocation
           address={barber.address}
           region={barber.region}

@@ -122,7 +122,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
 
     const subscriptionState = await getBarberSubscriptionState(req.payload, barberId)
 
-    const [barber, appointmentsRes, reviews, notifications] = await Promise.all([
+    const [barber, appointmentsRes, comments, notifications] = await Promise.all([
       req.payload.findByID({
         collection: 'barbers',
         id: barberId,
@@ -140,7 +140,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         req,
       }),
       req.payload.find({
-        collection: 'reviews',
+        collection: 'comments',
         depth: 1,
         where: { barber: { equals: barberId }, status: { equals: 'active' } },
         sort: '-createdAt',
@@ -165,7 +165,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
       barber,
       appointments: allAppointments,
       newRequests: allAppointments.filter((a) => a.status === 'reserved'),
-      reviews: reviews.docs,
+      comments: comments.docs,
       notifications: notifications.docs,
       subscription: subscriptionState,
       statistics: {

@@ -61,7 +61,7 @@ async function ensureUniqueSlug(
 /**
  * GET /api/profile
  * Aggregated profile of the logged-in user. Barbers additionally receive their
- * shop document, portfolio items and the active service catalog.
+ * shop document and the active service catalog.
  */
 export const profileGetEndpoint: PayloadEndpoint = {
   path: '/profile',
@@ -91,12 +91,12 @@ export const profileGetEndpoint: PayloadEndpoint = {
     }
 
     if (me.role !== ROLES.BARBER) {
-      return Response.json({ user: base, barber: null, portfolio: [] })
+      return Response.json({ user: base, barber: null })
     }
 
     const barberId = await getBarberIdForUser(req.payload, userId)
 
-    const [barberDoc, portfolio, servicesCatalog] = await Promise.all([
+    const [barberDoc, servicesCatalog] = await Promise.all([
       barberId
         ? req.payload.findByID({
             collection: 'barbers',
@@ -106,17 +106,6 @@ export const profileGetEndpoint: PayloadEndpoint = {
             req,
           })
         : Promise.resolve(null),
-      barberId
-        ? req.payload.find({
-            collection: 'portfolio',
-            depth: 1,
-            where: { barber: { equals: barberId } },
-            sort: '-createdAt',
-            limit: 60,
-            overrideAccess: false,
-            req,
-          })
-        : Promise.resolve({ docs: [] }),
       req.payload.find({
         collection: 'services',
         depth: 0,
@@ -164,19 +153,8 @@ export const profileGetEndpoint: PayloadEndpoint = {
             ),
             rating: barberDoc.rating ?? 0,
             reviewCount: barberDoc.reviewCount ?? 0,
-            isVerified: Boolean(barberDoc.isVerified),
-            isActive: Boolean(barberDoc.isActive),
           }
         : null,
-      portfolio: portfolio.docs.map((p) => ({
-        id: p.id,
-        title: p.title,
-        isActive: Boolean(p.isActive),
-        image:
-          p.image && typeof p.image === 'object'
-            ? { id: p.image.id, url: p.image.url ?? null, alt: p.image.alt }
-            : null,
-      })),
       servicesCatalog: servicesCatalog.docs.map((s) => ({ id: s.id, name: s.name })),
     })
   },

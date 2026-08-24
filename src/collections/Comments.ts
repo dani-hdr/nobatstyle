@@ -1,11 +1,34 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 import { isAdmin } from '../access'
 import { ROLES } from '../utils/constants'
 
+/** Recomputes the barber's denormalized rating/reviewCount from active comments. */
+async function updateBarberStats(req: PayloadRequest, barberId: string) {
+  const res = await req.payload.find({
+    collection: 'comments',
+    depth: 0,
+    limit: 0,
+    where: {
+      and: [{ barber: { equals: barberId } }, { status: { equals: 'active' } }],
+    },
+  })
+  const rated = res.docs.filter((c) => typeof c.rating === 'number')
+  const total = res.docs.length
+  const sum = rated.reduce((acc, c) => acc + (c.rating || 0), 0)
+  const rating = rated.length ? Math.round((sum / rated.length) * 10) / 10 : 0
+  await req.payload.update({
+    collection: 'barbers',
+    id: barberId,
+    data: { rating, reviewCount: total },
+    req,
+    overrideAccess: true,
+  })
+}
+
 /**
- * Free-form comments users leave on a barber profile. Kept separate from
- * `reviews` (which carry a rating and feed the denormalized barber score).
+ * Comments users leave on a barber profile. They carry a star rating and feed
+ * the denormalized barber score via hooks below.
  * New comments start as `pending` and only `active` ones render on the site.
  */
 export const Comments: CollectionConfig = {
@@ -17,7 +40,7 @@ export const Comments: CollectionConfig = {
   admin: {
     useAsTitle: 'id',
     group: 'آرایشگاه‌ها',
-    defaultColumns: ['barber', 'author', 'content', 'status'],
+    defaultColumns: ['barber', 'author', 'rating', 'content', 'status'],
   },
   access: {
     read: () => true,
@@ -46,6 +69,18 @@ export const Comments: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, req }) => {
+        if (!doc.barber) return
+        await updateBarberStats(req, String(typeof doc.barber === 'object' ? doc.barber.id : doc.barber))
+      },
+    ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        if (!doc.barber) return
+        await updateBarberStats(req, String(typeof doc.barber === 'object' ? doc.barber.id : doc.barber))
+      },
+    ],
   },
   fields: [
     {
@@ -63,6 +98,17 @@ export const Comments: CollectionConfig = {
       required: true,
       index: true,
       label: 'نویسنده',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'rating',
+      type: 'number',
+      required: true,
+      min: 1,
+      max: 5,
+      label: 'امتیاز',
       admin: {
         position: 'sidebar',
       },

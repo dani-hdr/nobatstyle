@@ -10,6 +10,7 @@ import {
   MapPin,
   Scissors,
   Search,
+  UserRound,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -69,12 +70,19 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
             نوبت‌ها و اعلان‌های خود را از این‌جا مدیریت کنید.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/barbers">
-            <Search className="size-4" />
-            رزرو نوبت جدید
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/barbers">
+              <Search className="size-4" />
+              رزرو نوبت جدید
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="icon" aria-label="پروفایل" title="پروفایل">
+            <Link href="/profile">
+              <UserRound className="size-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Next appointment */}

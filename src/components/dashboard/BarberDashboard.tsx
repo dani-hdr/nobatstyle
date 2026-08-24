@@ -85,6 +85,11 @@ export function BarberDashboard({ userName }: { userName?: string }) {
             </Link>
           </Button>
         )}
+        <Button asChild variant="outline" size="icon" aria-label="پروفایل" title="پروفایل">
+          <Link href="/profile">
+            <UserRound className="size-4" />
+          </Link>
+        </Button>
       </div>
 
       {/* Stats */}

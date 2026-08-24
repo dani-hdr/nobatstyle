@@ -31,6 +31,7 @@ import {
   customerDashboardEndpoint,
   barberDashboardEndpoint,
 } from './endpoints'
+import { profileGetEndpoint, profileUpdateEndpoint, profileAvatarEndpoint } from './endpoints/profile'
 import { requestOtpEndpoint, verifyOtpEndpoint } from './endpoints/otp'
 
 const filename = fileURLToPath(import.meta.url)
@@ -69,6 +70,9 @@ export default buildConfig({
     statusMetaEndpoint,
     customerDashboardEndpoint,
     barberDashboardEndpoint,
+    profileGetEndpoint,
+    profileUpdateEndpoint,
+    profileAvatarEndpoint,
     requestOtpEndpoint,
     verifyOtpEndpoint,
   ],

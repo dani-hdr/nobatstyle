@@ -1,7 +1,8 @@
 'use client'
 
-import { Check, Heart, MapPin, Share2, Star, UserCheck } from 'lucide-react'
+import { Check, Heart, MapPin, MessageCircle, Share2, Star, UserCheck } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -43,6 +44,7 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
+              <MessageButton barberId={barber.id} />
               <ShareButton shopName={barber.shopName} />
               <LikeButton />
             </div>
@@ -107,6 +109,27 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
 
 function toFa(v: number): string {
   return v.toLocaleString('fa-IR')
+}
+
+function MessageButton({ barberId }: { barberId: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="bg-white/10 text-white rounded-full backdrop-blur hover:bg-white/20 hover:text-white"
+          aria-label="ارسال پیام به آرایشگر"
+        >
+          <Link href={`/messages?barber=${barberId}`}>
+            <MessageCircle className="size-4.5" />
+          </Link>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>ارسال پیام</TooltipContent>
+    </Tooltip>
+  )
 }
 
 function ShareButton({ shopName }: { shopName: string }) {

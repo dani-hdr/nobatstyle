@@ -33,6 +33,7 @@ import {
 } from './endpoints'
 import { profileGetEndpoint, profileUpdateEndpoint, profileAvatarEndpoint } from './endpoints/profile'
 import { requestOtpEndpoint, verifyOtpEndpoint } from './endpoints/otp'
+import { conversationsListEndpoint, conversationCreateEndpoint } from './endpoints/chat'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -75,6 +76,8 @@ export default buildConfig({
     profileAvatarEndpoint,
     requestOtpEndpoint,
     verifyOtpEndpoint,
+    conversationsListEndpoint,
+    conversationCreateEndpoint,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

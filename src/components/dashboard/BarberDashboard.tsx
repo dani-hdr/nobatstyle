@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Clock,
   ExternalLink,
+  MessageCircle,
   Scissors,
   Star,
   UserRound,
@@ -77,19 +78,27 @@ export function BarberDashboard({ userName }: { userName?: string }) {
             {userName ? `${userName} عزیز،` : ''} پنل مدیریت آرایشگاه شما
           </p>
         </div>
-        {data.barber.shopSlug && (
+        <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link href={`/barbers/${data.barber.shopSlug}`}>
-              مشاهده صفحه عمومی
-              <ExternalLink className="size-4" />
+            <Link href="/messages">
+              <MessageCircle className="size-4" />
+              پیام‌ها
             </Link>
           </Button>
-        )}
-        <Button asChild variant="outline" size="icon" aria-label="پروفایل" title="پروفایل">
-          <Link href="/profile">
-            <UserRound className="size-4" />
-          </Link>
-        </Button>
+          {data.barber.shopSlug && (
+            <Button asChild variant="outline">
+              <Link href={`/barbers/${data.barber.shopSlug}`}>
+                مشاهده صفحه عمومی
+                <ExternalLink className="size-4" />
+              </Link>
+            </Button>
+          )}
+          <Button asChild variant="outline" size="icon" aria-label="پروفایل" title="پروفایل">
+            <Link href="/profile">
+              <UserRound className="size-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

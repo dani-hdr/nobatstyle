@@ -8,6 +8,7 @@ import {
   Clock,
   LogIn,
   MapPin,
+  MessageCircle,
   Scissors,
   Search,
   UserRound,
@@ -71,6 +72,12 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/messages">
+              <MessageCircle className="size-4" />
+              پیام‌ها
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href="/barbers">
               <Search className="size-4" />

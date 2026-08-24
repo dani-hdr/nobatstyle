@@ -28,11 +28,15 @@ export const Messages: CollectionConfig = {
   hooks: {
     afterChange: [
       // Touch the parent conversation so list ordering reflects newest message.
+      // `doc.conversation` may arrive populated (depth > 0) or as an id.
       async ({ operation, req, doc }) => {
         if (operation === 'create' && doc.conversation) {
+          const raw = doc.conversation as string | { id?: string }
+          const conversationId =
+            typeof raw === 'object' && raw !== null && 'id' in raw ? String(raw.id) : String(raw)
           await req.payload.update({
             collection: 'conversations',
-            id: doc.conversation as string,
+            id: conversationId,
             data: { lastMessage: doc.content || '', lastMessageAt: new Date().toISOString() },
             req,
             overrideAccess: true,

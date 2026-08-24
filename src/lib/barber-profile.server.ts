@@ -16,6 +16,7 @@ import type {
   Service as ServiceDoc,
 } from '@/payload-types'
 
+import { getBarberSubscriptionState } from './subscriptions.server'
 import type {
   BarberImage,
   BarberProfile,
@@ -159,6 +160,9 @@ export async function getBarberPageData(
   const isYourBarber =
     currentUserId != null && customerIds.includes(String(currentUserId))
 
+  const subscriptionState = await getBarberSubscriptionState(payload, barberId)
+  const bookingSuspended = subscriptionState.mode === 'expired'
+
   const satisfactionPct =
     (barber.reviewCount ?? 0) > 0 ? Math.round((barber.rating ?? 0) * 20) : null
 
@@ -239,7 +243,8 @@ export async function getBarberPageData(
       }
     }),
     availabilityDays: BOOKING_WINDOW_DAYS,
-    bookingState: 'booking',
+    bookingState: bookingSuspended ? 'pending' : 'booking',
+    statusNote: bookingSuspended ? 'رزرو نوبت در این آرایشگاه موقتاً غیرفعال است' : undefined,
   }
 
   const related: RelatedBarber[] = relatedRes.docs.map((b) => {

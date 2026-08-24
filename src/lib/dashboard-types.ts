@@ -63,12 +63,20 @@ export type CustomerDashboardData = {
   notifications: DashNotification[]
 }
 
+export type DashSubscriptionState = {
+  mode: 'trial' | 'active' | 'expired'
+  daysLeft: number | null
+  windowEndsAt: string | null
+  plan: { id: string; name: string } | null
+}
+
 export type BarberDashboardData = {
   barber: DashBarber
   appointments: DashAppointment[]
   newRequests: DashAppointment[]
   reviews: DashReview[]
   notifications: DashNotification[]
+  subscription: DashSubscriptionState
   statistics: {
     completedCount: number
     rating: number

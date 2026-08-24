@@ -1,11 +1,13 @@
 'use client'
 
 import {
+  AlertTriangle,
   BadgeCheck,
   CalendarClock,
   CalendarX2,
   ClipboardList,
   Clock,
+  Crown,
   ExternalLink,
   MessageCircle,
   Scissors,
@@ -20,7 +22,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/utils/cn'
-import type { BarberDashboardData, DashAppointment } from '@/lib/dashboard-types'
+import type {
+  BarberDashboardData,
+  DashAppointment,
+  DashSubscriptionState,
+} from '@/lib/dashboard-types'
 import { faDate, faTime } from '@/lib/dashboard-types'
 
 import { DashboardSkeleton, SectionTitle } from './CustomerDashboard'
@@ -100,6 +106,9 @@ export function BarberDashboard({ userName }: { userName?: string }) {
           </Button>
         </div>
       </div>
+
+      {/* Subscription status */}
+      <SubscriptionStrip subscription={data.subscription} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -345,4 +354,55 @@ function StatusBadge({ status, past }: { status: DashAppointment['status']; past
   if (status === 'cancelled') return <Badge variant="destructive">لغو شده</Badge>
   if (past) return <Badge variant="secondary">انجام شده</Badge>
   return <Badge variant="success">رزرو شده</Badge>
+}
+
+function SubscriptionStrip({ subscription }: { subscription: DashSubscriptionState }) {
+  if (subscription.mode === 'active' && (subscription.daysLeft == null || subscription.daysLeft > 7)) {
+    return null
+  }
+
+  const expired = subscription.mode === 'expired'
+  const expiringSoon = !expired && subscription.daysLeft != null && subscription.daysLeft <= 7
+
+  return (
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4',
+        expired ? 'border-destructive/40 bg-destructive/5' : 'border-primary/30 bg-primary/5',
+      )}
+    >
+      <div className="flex items-center gap-2.5">
+        <span
+          className={cn(
+            'flex size-9 items-center justify-center rounded-full',
+            expired ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary',
+          )}
+        >
+          {expired ? <AlertTriangle className="size-4.5" /> : <Crown className="size-4.5" />}
+        </span>
+        <div>
+          <p className="text-sm font-semibold">
+            {expired
+              ? 'اشتراک شما منقضی شده است'
+              : subscription.mode === 'trial'
+                ? `دوره آزمایشی رایگان — ${subscription.daysLeft?.toLocaleString('fa-IR')} روز مانده`
+                : `پلن ${subscription.plan?.name ?? ''} — ${subscription.daysLeft?.toLocaleString('fa-IR')} روز مانده`}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {expired
+              ? 'پذیرش نوبت غیرفعال است؛ برای ادامه اشتراک را فعال کنید.'
+              : 'برای تمدید و مدیریت اشتراک به صفحه اشتراک بروید.'}
+          </p>
+        </div>
+      </div>
+      {(expired || expiringSoon) && (
+        <Button asChild size="sm">
+          <Link href="/subscription">
+            <Crown className="size-4" />
+            مدیریت اشتراک
+          </Link>
+        </Button>
+      )}
+    </div>
+  )
 }

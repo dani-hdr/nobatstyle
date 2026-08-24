@@ -2,6 +2,7 @@ import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import { APIError } from 'payload'
 import { isAdmin } from '../access'
 import { getBarberIdForUser } from '../lib/barber-user'
+import { canAcceptBookings } from '../lib/subscriptions.server'
 import { ROLES } from '../utils/constants'
 
 /** Row constraint limiting a barber to their own shop's appointments. */
@@ -22,8 +23,8 @@ async function ownBarberWhere(
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
   labels: {
-    singular: 'رزرو',
-    plural: 'رزروها',
+    singular: 'نوبت',
+    plural: 'نوبت ها',
   },
   admin: {
     useAsTitle: 'id',
@@ -84,6 +85,17 @@ export const Appointments: CollectionConfig = {
           throw new APIError('این وقت دیگر در دسترس نیست', 409)
         }
 
+        // Subscription gate — customers book free, but the shop must be
+        // covered (trial or paid plan) to accept reservations.
+        const barberId = String(
+          typeof existing.barber === 'object' && existing.barber
+            ? existing.barber.id
+            : existing.barber,
+        )
+        if (!(await canAcceptBookings(req.payload, barberId))) {
+          throw new APIError('ظرفیت رزرو این آرایشگاه موقتاً غیرفعال است.', 403)
+        }
+
         const updated = await req.payload.update({
           collection: 'appointments',
           id,
@@ -108,6 +120,16 @@ export const Appointments: CollectionConfig = {
           const barberId = await getBarberIdForUser(req.payload, req.user.id)
           if (!barberId) throw new APIError('پروفایل آرایشگر یافت نشد', 404)
           data.barber = barberId
+        }
+        // Barbers without subscription coverage cannot stock new slots.
+        if (operation === 'create' && req.user?.role === ROLES.BARBER && data.barber) {
+          const barberId = String(
+            typeof data.barber === 'object' && data.barber ? data.barber.id : data.barber,
+          )
+          const ownBarberId = await getBarberIdForUser(req.payload, req.user.id)
+          if (ownBarberId === barberId && !(await canAcceptBookings(req.payload, barberId))) {
+            throw new APIError('برای ثبت وقت جدید ابتدا اشتراک خود را فعال کنید.', 403)
+          }
         }
         if (data.status && data.status !== 'available' && !data.customer) {
           throw new APIError('برای رزرو این وقت باید مشتری مشخص شود', 400)

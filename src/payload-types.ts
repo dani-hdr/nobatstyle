@@ -81,6 +81,7 @@ export interface Config {
     messages: Message;
     notifications: Notification;
     subscriptionPlans: SubscriptionPlan;
+    subscriptions: Subscription;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -106,6 +107,7 @@ export interface Config {
     messages: MessagesSelect<false> | MessagesSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     subscriptionPlans: SubscriptionPlansSelect<false> | SubscriptionPlansSelect<true>;
+    subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -452,6 +454,25 @@ export interface SubscriptionPlan {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions".
+ */
+export interface Subscription {
+  id: string;
+  barber: string | Barber;
+  plan: string | SubscriptionPlan;
+  status: 'active' | 'cancelled';
+  startsAt: string;
+  expiresAt: string;
+  amount?: number | null;
+  /**
+   * در اتصال درگاه پرداخت، شناسه تراکنش اینجا ذخیره می‌شود
+   */
+  paymentRef?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -529,6 +550,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscriptionPlans';
         value: string | SubscriptionPlan;
+      } | null)
+    | ({
+        relationTo: 'subscriptions';
+        value: string | Subscription;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -785,6 +810,21 @@ export interface SubscriptionPlansSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions_select".
+ */
+export interface SubscriptionsSelect<T extends boolean = true> {
+  barber?: T;
+  plan?: T;
+  status?: T;
+  startsAt?: T;
+  expiresAt?: T;
+  amount?: T;
+  paymentRef?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -866,6 +906,16 @@ export interface Setting {
         }[]
       | null;
   };
+  monetization?: {
+    /**
+     * مشتریان همیشه رایگان‌اند؛ با فعال بودن این گزینه، آرایشگرها بعد از پایان دوره آزمایشی باید اشتراک فعال داشته باشند تا نوبت بپذیرند.
+     */
+    enforceSubscription?: boolean | null;
+    /**
+     * از لحظه ساخت پروفایل آرایشگر محاسبه می‌شود
+     */
+    trialDays?: number | null;
+  };
   auth?: {
     registrationEnabled?: boolean | null;
     otpEnabled?: boolean | null;
@@ -940,6 +990,12 @@ export interface SettingsSelect<T extends boolean = true> {
               href?: T;
               id?: T;
             };
+      };
+  monetization?:
+    | T
+    | {
+        enforceSubscription?: T;
+        trialDays?: T;
       };
   auth?:
     | T

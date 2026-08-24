@@ -87,6 +87,28 @@ export const Settings: GlobalConfig = {
     },
     {
       type: 'group',
+      name: 'monetization',
+      label: 'اشتراک آرایشگران',
+      fields: [
+        {
+          name: 'enforceSubscription',
+          type: 'checkbox',
+          defaultValue: true,
+          label: 'اجبار اشتراک برای پذیرش نوبت',
+          admin: { description: 'مشتریان همیشه رایگان‌اند؛ با فعال بودن این گزینه، آرایشگرها بعد از پایان دوره آزمایشی باید اشتراک فعال داشته باشند تا نوبت بپذیرند.' },
+        },
+        {
+          name: 'trialDays',
+          type: 'number',
+          defaultValue: 14,
+          min: 0,
+          label: 'دوره آزمایشی رایگان (روز)',
+          admin: { description: 'از لحظه ساخت پروفایل آرایشگر محاسبه می‌شود' },
+        },
+      ],
+    },
+    {
+      type: 'group',
       name: 'auth',
       label: 'ثبت‌نام و ورود',
       fields: [

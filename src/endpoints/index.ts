@@ -1,6 +1,7 @@
 import type { Endpoint as PayloadEndpoint, Where } from 'payload'
 import { APIError } from 'payload'
 import { getBarberIdForUser } from '../lib/barber-user'
+import { getBarberSubscriptionState } from '../lib/subscriptions.server'
 import { ROLES } from '../utils/constants'
 import { STATUS_META } from '../utils/constants'
 
@@ -119,6 +120,8 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
     const barberId = await getBarberIdForUser(req.payload, userId)
     if (!barberId) throw new APIError('Barber profile not found', 404)
 
+    const subscriptionState = await getBarberSubscriptionState(req.payload, barberId)
+
     const [barber, appointmentsRes, reviews, notifications] = await Promise.all([
       req.payload.findByID({
         collection: 'barbers',
@@ -164,6 +167,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
       newRequests: allAppointments.filter((a) => a.status === 'reserved'),
       reviews: reviews.docs,
       notifications: notifications.docs,
+      subscription: subscriptionState,
       statistics: {
         completedCount: allAppointments.filter(
           (a) => a.status === 'reserved' && a.toDate && new Date(a.toDate).getTime() < Date.now(),

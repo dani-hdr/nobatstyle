@@ -21,6 +21,7 @@ import { Conversations } from './collections/Conversations'
 import { Messages } from './collections/Messages'
 import { Notifications } from './collections/Notifications'
 import { SubscriptionPlans } from './collections/SubscriptionPlans'
+import { Subscriptions } from './collections/Subscriptions'
 
 import { Settings } from './globals/Settings'
 import { Home } from './globals/Home'
@@ -34,6 +35,10 @@ import {
 import { profileGetEndpoint, profileUpdateEndpoint, profileAvatarEndpoint } from './endpoints/profile'
 import { requestOtpEndpoint, verifyOtpEndpoint } from './endpoints/otp'
 import { conversationsListEndpoint, conversationCreateEndpoint } from './endpoints/chat'
+import {
+  barberSubscriptionGetEndpoint,
+  barberSubscriptionPurchaseEndpoint,
+} from './endpoints/subscriptions'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -60,6 +65,7 @@ export default buildConfig({
     Messages,
     Notifications,
     SubscriptionPlans,
+    Subscriptions,
   ],
   globals: [Settings, Home],
   i18n: {
@@ -78,6 +84,8 @@ export default buildConfig({
     verifyOtpEndpoint,
     conversationsListEndpoint,
     conversationCreateEndpoint,
+    barberSubscriptionGetEndpoint,
+    barberSubscriptionPurchaseEndpoint,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

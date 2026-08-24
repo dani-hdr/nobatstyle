@@ -8,6 +8,7 @@ import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { DirectionProvider } from '@/components/ui/direction'
 import { getCities } from '@/lib/barber-search'
 import { getSiteInfo } from '@/lib/site'
+import { getViewer } from '@/lib/viewer.server'
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
@@ -29,7 +30,7 @@ export async function generateMetadata() {
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
-  const [siteInfo, cities] = await Promise.all([getSiteInfo(), getCities()])
+  const [siteInfo, cities, viewer] = await Promise.all([getSiteInfo(), getCities(), getViewer()])
 
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
@@ -40,6 +41,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             logo={siteInfo.logo}
             items={siteInfo.navLinks}
             cities={cities}
+            user={viewer}
           />
 
           <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">

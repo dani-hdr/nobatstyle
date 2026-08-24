@@ -2,6 +2,7 @@ import { Search } from 'lucide-react'
 
 import { BarberSearch } from '@/components/home/BarberSearch'
 import type { ProvinceGroup } from '@/lib/barber-search'
+import type { Viewer } from '@/lib/viewer.server'
 import { Button } from '@/components/ui/button'
 import { Logo } from './Logo'
 import { MobileMenu } from './MobileMenu'
@@ -12,11 +13,13 @@ export function MobileHeader({
   logo,
   items,
   cities,
+  user,
 }: {
   siteName?: string
   logo?: { url?: string | null; alt?: string | null } | null
   items?: NavItem[]
   cities: ProvinceGroup[]
+  user?: Viewer | null
 }) {
   return (
     <div className="flex w-full h-16 items-center justify-between md:hidden">
@@ -30,7 +33,7 @@ export function MobileHeader({
             </Button>
           }
         />
-        <MobileMenu items={items} />
+        <MobileMenu items={items} user={user} />
       </div>
     </div>
   )

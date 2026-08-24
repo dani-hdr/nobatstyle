@@ -7,12 +7,14 @@ import * as React from 'react'
 import { BarberSearch } from '@/components/home/BarberSearch'
 import { Button } from '@/components/ui/button'
 import type { ProvinceGroup } from '@/lib/barber-search'
+import type { Viewer } from '@/lib/viewer.server'
 import { cn } from '@/utils/cn'
 import { Container } from './Container'
 import { DesktopNav } from './DesktopNav'
 import { Logo } from './Logo'
 import { MobileHeader } from './MobileHeader'
 import type { NavItem } from './nav-items'
+import { UserMenu } from './UserMenu'
 
 type HeaderImage = { url?: string | null; alt?: string | null } | null
 
@@ -21,11 +23,13 @@ export function Header({
   logo,
   items,
   cities,
+  user,
 }: {
   siteName?: string
   logo?: HeaderImage
   items?: NavItem[]
   cities: ProvinceGroup[]
+  user?: Viewer | null
 }) {
   const [scrolled, setScrolled] = React.useState(false)
 
@@ -65,14 +69,24 @@ export function Header({
                 </Button>
               }
             />
-            <Link href="/login" className="hidden md:block">
-              <Button size="sm" className="h-9 rounded-full px-5">
-                ورود / ثبت‌نام
-              </Button>
-            </Link>
+            {user ? (
+              <UserMenu viewer={user} />
+            ) : (
+              <Link href="/login" className="hidden md:block">
+                <Button size="sm" className="h-9 rounded-full px-5">
+                  ورود / ثبت‌نام
+                </Button>
+              </Link>
+            )}
           </div>
 
-          <MobileHeader siteName={siteName} logo={logo} items={items} cities={cities} />
+          <MobileHeader
+            siteName={siteName}
+            logo={logo}
+            items={items}
+            cities={cities}
+            user={user}
+          />
         </Container>
       </div>
     </header>

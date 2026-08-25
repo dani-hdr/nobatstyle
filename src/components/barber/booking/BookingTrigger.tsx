@@ -1,8 +1,11 @@
 'use client'
 
-import type { ComponentProps, ReactNode } from 'react'
+import { Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState, type ComponentProps, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { cn } from '@/utils/cn'
 
 import { useBooking } from './booking-context'
 
@@ -15,25 +18,92 @@ export const BOOKING_STATE_LABELS: Record<BookingState, string> = {
 }
 
 type BookingTriggerProps = Omit<ComponentProps<typeof Button>, 'onClick' | 'children'> & {
-  children?: ReactNode
+  /** Server-computed relationship state driving the CTA behaviour. */
+  state?: BookingState
+  /** Optional leading icon; the label is derived from the current state. */
+  icon?: ReactNode
   initialServiceId?: string
+  barberId?: string
 }
 
-/** A button that opens the booking flow, optionally preselected to a service. */
+/**
+ * The booking CTA. Its behaviour follows the viewer's relationship to the
+ * shop (server-computed `state`):
+ * - `booking`: opens the reservation wizard;
+ * - `request`: sends a customer request to the barber (401 → login page);
+ * - `pending`: disabled while the barber has not approved yet.
+ */
 export function BookingTrigger({
-  children,
+  icon,
   initialServiceId,
   state = 'booking',
+  barberId,
+  className,
   ...buttonProps
-}: BookingTriggerProps & { state?: BookingState }) {
+}: BookingTriggerProps) {
+  const router = useRouter()
   const { openBooking } = useBooking()
+  const [localState, setLocalState] = useState<BookingState>(state)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const label = BOOKING_STATE_LABELS[state]
-  const disabled = buttonProps.disabled || state === 'pending'
+  // Keep the optimistic local state in sync with server-rendered truth.
+  useEffect(() => {
+    setLocalState(state)
+  }, [state])
+
+  const disabled = buttonProps.disabled || sending || localState === 'pending'
+
+  const onClick = () => {
+    setError(null)
+    if (localState === 'request') {
+      void sendRequest()
+      return
+    }
+    openBooking(initialServiceId)
+  }
+
+  const sendRequest = async () => {
+    if (!barberId) {
+      setError('امکان ثبت درخواست نیست.')
+      return
+    }
+    setSending(true)
+    try {
+      const res = await fetch('/api/barber-requests/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barberId }),
+      })
+      if (res.status === 401) {
+        window.location.href = '/login'
+        return
+      }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(data.error ?? 'خطا در ثبت درخواست')
+      }
+      setLocalState('pending')
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در ثبت درخواست')
+    } finally {
+      setSending(false)
+    }
+  }
 
   return (
-    <Button size='lg' {...buttonProps} disabled={disabled} onClick={() => openBooking(initialServiceId)}>
-      {children ?? label}
-    </Button>
+    <div className={cn('w-full', className)}>
+      <Button size='lg' {...buttonProps} className='w-full' disabled={disabled} onClick={onClick}>
+        {sending ? <Loader2 className='size-4 animate-spin' /> : icon}
+        {BOOKING_STATE_LABELS[localState]}
+      </Button>
+      {localState === 'pending' && (
+        <p className='text-muted-foreground mt-1.5 text-center text-xs'>
+          تا زمان تایید آرایشگر امکان رزرو وجود ندارد
+        </p>
+      )}
+      {error && <p className='text-destructive mt-1.5 text-center text-xs'>{error}</p>}
+    </div>
   )
 }

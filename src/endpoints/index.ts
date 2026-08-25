@@ -122,7 +122,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
 
     const subscriptionState = await getBarberSubscriptionState(req.payload, barberId)
 
-    const [barber, appointmentsRes, comments, notifications] = await Promise.all([
+    const [barber, appointmentsRes, comments, notifications, requestsRes] = await Promise.all([
       req.payload.findByID({
         collection: 'barbers',
         id: barberId,
@@ -157,6 +157,15 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         overrideAccess: false,
         req,
       }),
+      req.payload.find({
+        collection: 'barber-requests',
+        depth: 1,
+        where: { and: [{ barber: { equals: barberId } }, { status: { equals: 'pending' } }] },
+        sort: '-createdAt',
+        limit: 20,
+        overrideAccess: false,
+        req,
+      }),
     ])
 
     const allAppointments = appointmentsRes.docs
@@ -165,6 +174,32 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
       barber,
       appointments: allAppointments,
       newRequests: allAppointments.filter((a) => a.status === 'reserved'),
+      // Customer docs are not population-readable by barbers (users are
+      // self-read), so names are resolved explicitly here.
+      customerRequests: await Promise.all(
+        requestsRes.docs.map(async (r) => {
+          const customerId =
+            typeof r.customer === 'object' ? String(r.customer.id) : String(r.customer)
+          const user = await req.payload
+            .findByID({
+              collection: 'users',
+              id: customerId,
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+            .catch(() => null)
+          return {
+            id: String(r.id),
+            createdAt: r.createdAt,
+            customer: {
+              id: customerId,
+              name: user?.name ?? null,
+              username: user?.username ?? null,
+            },
+          }
+        }),
+      ),
       comments: comments.docs,
       notifications: notifications.docs,
       subscription: subscriptionState,

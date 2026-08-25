@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { LocationPicker, type MapPoint } from '@/components/map/LocationPicker'
 import type { ProfileBarber } from '@/lib/profile-types'
 import { cn } from '@/utils/cn'
 
@@ -38,6 +39,7 @@ export function BarberShopSettings({
   const [phone, setPhone] = React.useState(barber?.phone ?? '')
   const [about, setAbout] = React.useState(barber?.about ?? '')
   const [experienceYears, setExperienceYears] = React.useState(String(barber?.experienceYears ?? 0))
+  const [location, setLocation] = React.useState<MapPoint | null>(barber?.location ?? null)
   const [pending, setPending] = React.useState(false)
   const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null)
 
@@ -76,6 +78,7 @@ export function BarberShopSettings({
             phone,
             about,
             experienceYears: Number(experienceYears) || 0,
+            location: location ? [location.lng, location.lat] : null,
           },
         }),
       })
@@ -179,19 +182,24 @@ export function BarberShopSettings({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="shop-address">آدرس</Label>
-            <div className="relative">
-              <MapPin className="text-muted-foreground pointer-events-none absolute top-2.5 start-3 size-4" />
-              <Input
-                id="shop-address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="خیابان، کوچه، پلاک"
-                className="ps-9"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="shop-address">آدرس</Label>
+              <div className="relative">
+                <MapPin className="text-muted-foreground pointer-events-none absolute top-2.5 start-3 size-4" />
+                <Input
+                  id="shop-address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="خیابان، کوچه، پلاک"
+                  className="ps-9"
+                />
+              </div>
             </div>
-          </div>
+
+            <div className="space-y-1.5">
+              <Label>موقعیت روی نقشه</Label>
+              <LocationPicker value={location} onChange={setLocation} />
+            </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="shop-about">درباره آرایشگاه</Label>

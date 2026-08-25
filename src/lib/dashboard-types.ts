@@ -70,10 +70,17 @@ export type DashSubscriptionState = {
   plan: { id: string; name: string } | null
 }
 
+export type DashCustomerRequest = {
+  id: string
+  createdAt: string
+  customer: { id: string; name: string | null; username: string | null }
+}
+
 export type BarberDashboardData = {
   barber: DashBarber
   appointments: DashAppointment[]
   newRequests: DashAppointment[]
+  customerRequests?: DashCustomerRequest[]
   comments: DashComment[]
   notifications: DashNotification[]
   subscription: DashSubscriptionState

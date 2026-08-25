@@ -96,6 +96,41 @@ export const Appointments: CollectionConfig = {
           throw new APIError('ظرفیت رزرو این آرایشگاه موقتاً غیرفعال است.', 403)
         }
 
+        // Customer-membership gate — a customer may only book once the
+        // barber has approved their request (or booked before the rule).
+        if (req.user.role === ROLES.CUSTOMER) {
+          const requesterId = String(req.user.id)
+          const barberDoc = await req.payload.findByID({
+            collection: 'barbers',
+            id: barberId,
+            depth: 0,
+            overrideAccess: true,
+          })
+          const memberIds = (barberDoc.customers ?? []).map((c) =>
+            String(typeof c === 'object' ? c.id : c),
+          )
+          let isMember = memberIds.includes(requesterId)
+          if (!isMember) {
+            const approvedRes = await req.payload.find({
+              collection: 'barber-requests',
+              where: {
+                and: [
+                  { barber: { equals: barberId } },
+                  { customer: { equals: requesterId } },
+                  { status: { equals: 'approved' } },
+                ],
+              },
+              limit: 1,
+              pagination: false,
+              overrideAccess: true,
+            })
+            isMember = approvedRes.docs.length > 0
+          }
+          if (!isMember) {
+            throw new APIError('برای رزرو ابتدا باید درخواست شما توسط آرایشگر تایید شود', 403)
+          }
+        }
+
         const updated = await req.payload.update({
           collection: 'appointments',
           id,

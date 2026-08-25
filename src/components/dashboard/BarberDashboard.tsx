@@ -4,14 +4,18 @@ import {
   AlertTriangle,
   CalendarClock,
   CalendarX2,
+  Check,
   ClipboardList,
   Clock,
   Crown,
   ExternalLink,
+  Loader2,
   MessageCircle,
   Scissors,
   Star,
+  UserPlus,
   UserRound,
+  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -36,6 +40,7 @@ export function BarberDashboard({ userName }: { userName?: string }) {
     '/api/barber/dashboard',
   )
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [decidingRequestId, setDecidingRequestId] = useState<string | null>(null)
 
   const cancelAppointment = async (id: string) => {
     setCancellingId(id)
@@ -48,6 +53,16 @@ export function BarberDashboard({ userName }: { userName?: string }) {
       await reload()
     } finally {
       setCancellingId(null)
+    }
+  }
+
+  const decideRequest = async (id: string, decision: 'approve' | 'reject') => {
+    setDecidingRequestId(id)
+    try {
+      await fetch(`/api/barber-requests/${id}/${decision}`, { method: 'POST' })
+      await reload()
+    } finally {
+      setDecidingRequestId(null)
     }
   }
 
@@ -132,6 +147,64 @@ export function BarberDashboard({ userName }: { userName?: string }) {
           label="لغو شده"
         />
       </div>
+
+      {/* Incoming customer requests */}
+      <section className="space-y-4">
+        <SectionTitle icon={UserPlus} title="درخواست‌های مشتریان" />
+        {(data.customerRequests ?? []).length === 0 ? (
+          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
+            درخواست جدیدی وجود ندارد.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(data.customerRequests ?? []).map((r) => {
+              const busy = decidingRequestId === r.id
+              const name = r.customer.name || r.customer.username || 'کاربر'
+              return (
+                <Card key={r.id} className="py-0">
+                  <CardContent className="px-4 py-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="flex items-center gap-1.5 font-semibold">
+                        <UserRound className="text-primary size-4" />
+                        {name}
+                      </h3>
+                      <Badge variant="secondary">در انتظار تایید</Badge>
+                    </div>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      درخواست عضویت — {faDate(r.createdAt)}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        disabled={busy}
+                        onClick={() => void decideRequest(r.id, 'approve')}
+                      >
+                        {busy ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                        تایید
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive flex-1"
+                        disabled={busy}
+                        onClick={() => void decideRequest(r.id, 'reject')}
+                      >
+                        <X className="size-4" />
+                        رد
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Incoming appointments */}
       <section className="space-y-4">

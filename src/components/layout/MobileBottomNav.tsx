@@ -7,9 +7,9 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/utils/cn'
 
 const items = [
-  { href: '/messages', label: 'پیام‌ها', Icon: MessageCircle },
   { href: '/', label: 'خانه', Icon: Home },
   { href: '/dashboard', label: 'نوبت‌های من', Icon: CalendarCheck },
+  { href: '/messages', label: 'پیام‌ها', Icon: MessageCircle },
   { href: '/profile', label: 'پروفایل', Icon: UserRound },
 ]
 

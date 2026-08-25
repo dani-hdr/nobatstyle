@@ -18,6 +18,7 @@ type ProfileBody = {
     coverId?: string | null
     galleryIds?: string[]
     serviceIds?: string[]
+    location?: [number, number] | null
   } | null
 }
 
@@ -132,6 +133,9 @@ export const profileGetEndpoint: PayloadEndpoint = {
             cityId:
               typeof barberDoc.city === 'object' ? barberDoc.city.id : (barberDoc.city ?? null),
             address: barberDoc.address ?? null,
+            location: barberDoc.location
+              ? { lat: barberDoc.location[1], lng: barberDoc.location[0] }
+              : null,
             phone: barberDoc.phone ?? null,
             about: barberDoc.about ?? null,
             experienceYears: barberDoc.experienceYears ?? 0,
@@ -236,6 +240,28 @@ export const profileUpdateEndpoint: PayloadEndpoint = {
       }
       if (shop.serviceIds !== undefined) {
         barberData.services = (shop.serviceIds ?? []).filter(Boolean)
+      }
+      if (shop.location !== undefined) {
+        if (shop.location === null) {
+          barberData.location = null
+        } else {
+          const [rawLng, rawLat] = shop.location
+          const lng = Number(rawLng)
+          const lat = Number(rawLat)
+          if (
+            !Array.isArray(shop.location) ||
+            !Number.isFinite(lng) ||
+            !Number.isFinite(lat) ||
+            lng < -180 ||
+            lng > 180 ||
+            lat < -90 ||
+            lat > 90
+          ) {
+            throw new APIError('مختصات موقعیت مکانی معتبر نیست', 400)
+          }
+          // Payload `point` stores Mongo order: [lng, lat].
+          barberData.location = [lng, lat]
+        }
       }
 
       const existingBarberId = await getBarberIdForUser(req.payload, userId)

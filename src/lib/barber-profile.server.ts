@@ -145,8 +145,58 @@ export async function getBarberPageData(
   const isYourBarber =
     currentUserId != null && customerIds.includes(String(currentUserId))
 
+  // Owner of this shop viewing their own page — never gated by membership.
+  const ownerId =
+    typeof barber.user === 'object' && barber.user !== null ? String(barber.user.id) : null
+  const viewerIsOwner = currentUserId != null && ownerId === String(currentUserId)
+
+  /**
+   * Booking CTA state:
+   * - expired subscription keeps the old suspended behaviour;
+   * - the owner always sees a normal booking button;
+   * - an approved customer books freely (and sees «آرایشگر شما»);
+   * - a pending requester sees a disabled «در انتظار تایید»;
+   * - anyone else (incl. anonymous visitors) must send a request first.
+   */
+  let requestStatus: 'none' | 'pending' | 'approved' = 'none'
+  if (currentUserId != null && !viewerIsOwner && !isYourBarber) {
+    const res = await payload.find({
+      collection: 'barber-requests',
+      where: {
+        and: [
+          { barber: { equals: barberId } },
+          { customer: { equals: String(currentUserId) } },
+          { status: { in: ['pending', 'approved'] } },
+        ],
+      },
+      limit: 1,
+      pagination: false,
+    })
+    const doc = res.docs[0]
+    if (doc?.status === 'pending') requestStatus = 'pending'
+    else if (doc?.status === 'approved') requestStatus = 'approved'
+  }
+
   const subscriptionState = await getBarberSubscriptionState(payload, barberId)
   const bookingSuspended = subscriptionState.mode === 'expired'
+
+  let bookingState: BarberProfile['bookingState']
+  let statusNote: string | undefined
+  if (bookingSuspended) {
+    bookingState = 'pending'
+    statusNote = 'رزرو نوبت در این آرایشگاه موقتاً غیرفعال است'
+  } else if (
+    viewerIsOwner ||
+    isYourBarber ||
+    requestStatus === 'approved'
+  ) {
+    bookingState = 'booking'
+  } else if (requestStatus === 'pending') {
+    bookingState = 'pending'
+    statusNote = 'درخواست شما در انتظار تایید آرایشگر است'
+  } else {
+    bookingState = 'request'
+  }
 
   const satisfactionPct =
     (barber.reviewCount ?? 0) > 0 ? Math.round((barber.rating ?? 0) * 20) : null
@@ -215,8 +265,8 @@ export async function getBarberPageData(
     }),
     commentsTotal: commentsRes.totalDocs,
     availabilityDays: BOOKING_WINDOW_DAYS,
-    bookingState: bookingSuspended ? 'pending' : 'booking',
-    statusNote: bookingSuspended ? 'رزرو نوبت در این آرایشگاه موقتاً غیرفعال است' : undefined,
+    bookingState,
+    statusNote,
   }
 
   const expiredRelated = await getExpiredBarberIds(

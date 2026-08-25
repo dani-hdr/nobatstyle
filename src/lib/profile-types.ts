@@ -28,6 +28,8 @@ export type ProfileBarber = {
   phone: string | null
   about: string | null
   experienceYears: number
+  /** Map pin, [lng, lat] on the wire (Mongo point order). */
+  location?: { lat: number; lng: number } | null
   cover: ProfileImage | null
   gallery: ProfileImage[]
   serviceIds: string[]
@@ -61,5 +63,7 @@ export type ProfileUpdateBody = {
     coverId?: string | null
     galleryIds?: string[]
     serviceIds?: string[]
+    /** [lng, lat]; send null to remove the pin. */
+    location?: [number, number] | null
   } | null
 }

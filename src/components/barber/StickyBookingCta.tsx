@@ -4,7 +4,7 @@ import { CalendarPlus } from 'lucide-react'
 
 import type { BarberProfile } from '@/lib/barber-profile'
 
-import { BOOKING_STATE_LABELS, BookingTrigger } from './booking/BookingTrigger'
+import { BookingTrigger } from './booking/BookingTrigger'
 
 /**
  * Floating booking CTA shown only on mobile. Sits above the fixed bottom nav
@@ -16,12 +16,11 @@ export function StickyBookingCta({ barber }: { barber: BarberProfile }) {
       <div className="bg-background/95 shadow-lg backdrop-blur rounded-xl border p-2">
         <BookingTrigger
           state={barber.bookingState}
+          barberId={barber.id}
+          icon={<CalendarPlus className="size-5" />}
           size="lg"
-          className="w-full rounded-lg"
-        >
-          <CalendarPlus className="size-5" />
-          {BOOKING_STATE_LABELS[barber.bookingState]}
-        </BookingTrigger>
+          className="rounded-lg"
+        />
       </div>
     </div>
   )

@@ -74,6 +74,7 @@ export interface Config {
     barbers: Barber;
     services: Service;
     appointments: Appointment;
+    'barber-requests': BarberRequest;
     comments: Comment;
     conversations: Conversation;
     messages: Message;
@@ -98,6 +99,7 @@ export interface Config {
     barbers: BarbersSelect<false> | BarbersSelect<true>;
     services: ServicesSelect<false> | ServicesSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
+    'barber-requests': BarberRequestsSelect<false> | BarberRequestsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
@@ -331,6 +333,18 @@ export interface Service {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "barber-requests".
+ */
+export interface BarberRequest {
+  id: string;
+  barber: string | Barber;
+  customer: string | User;
+  status: 'pending' | 'approved' | 'rejected';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments".
  */
 export interface Comment {
@@ -486,6 +500,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'appointments';
         value: string | Appointment;
+      } | null)
+    | ({
+        relationTo: 'barber-requests';
+        value: string | BarberRequest;
       } | null)
     | ({
         relationTo: 'comments';
@@ -661,6 +679,17 @@ export interface AppointmentsSelect<T extends boolean = true> {
   service?: T;
   fromDate?: T;
   toDate?: T;
+  customer?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "barber-requests_select".
+ */
+export interface BarberRequestsSelect<T extends boolean = true> {
+  barber?: T;
   customer?: T;
   status?: T;
   updatedAt?: T;

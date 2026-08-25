@@ -94,6 +94,7 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
         <CardFooter className='z-20 relative h-full'>
           <BookingTrigger
             state={barber.bookingState}
+            barberId={barber.id}
             size="lg"
             className='w-full mt-auto'
             variant={'secondary'}

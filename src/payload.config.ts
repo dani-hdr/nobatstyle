@@ -14,6 +14,7 @@ import { Cities } from './collections/Cities'
 import { Barbers } from './collections/Barbers'
 import { Services } from './collections/Services'
 import { Appointments } from './collections/Appointments'
+import { BarberRequests } from './collections/BarberRequests'
 import { Comments } from './collections/Comments'
 import { Conversations } from './collections/Conversations'
 import { Messages } from './collections/Messages'
@@ -57,6 +58,7 @@ export default buildConfig({
     Barbers,
     Services,
     Appointments,
+    BarberRequests,
     Comments,
     Conversations,
     Messages,

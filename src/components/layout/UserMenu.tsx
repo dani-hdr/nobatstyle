@@ -71,7 +71,7 @@ export function UserMenu({ viewer }: { viewer: Viewer }) {
           aria-label="منوی حساب کاربری"
           className="h-9 rounded-full ps-1 pe-2 lg:ps-1.5 lg:pe-3"
         >
-          <ViewerAvatar viewer={viewer} className="size-7" />
+          <ViewerAvatar viewer={viewer} className="size-7 hidden md:block" />
           <span className="hidden max-w-28 truncate text-sm font-medium lg:inline">
             {displayName(viewer)}
           </span>

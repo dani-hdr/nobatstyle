@@ -1,9 +1,9 @@
 import { Search } from 'lucide-react'
 
 import { BarberSearch } from '@/components/home/BarberSearch'
+import { Button } from '@/components/ui/button'
 import type { ProvinceGroup } from '@/lib/barber-search'
 import type { Viewer } from '@/lib/viewer.server'
-import { Button } from '@/components/ui/button'
 import { Logo } from './Logo'
 import { MobileMenu } from './MobileMenu'
 import type { NavItem } from './nav-items'

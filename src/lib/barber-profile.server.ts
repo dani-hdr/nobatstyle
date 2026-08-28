@@ -26,7 +26,7 @@ import type {
 const FALLBACK_COVER: BarberImage = { url: '/barber/nobat-cover.svg', alt: '' }
 const BOOKING_WINDOW_DAYS = 2 // today + tomorrow
 const COMMENT_STATUSES = ['active'] as const
-/** Comments rendered server-side; the rest loads via /api/comments pagination. */
+/** Comments rendered server-side; the rest loads via /api/comments-list pagination. */
 export const COMMENTS_PAGE_SIZE = 5
 
 function toImg(
@@ -66,11 +66,14 @@ export async function getBarberPageData(
     depth: 2,
     limit: 1,
     where: {
-      and: [{ shopSlug: { equals: slug } }],
+      and: [{ id: { equals: slug } }],
     },
   })
   const barber = docs[0]
   if (!barber) return null
+  // Incomplete shops (missing owner name / shop name / city) are inactive:
+  // their public page does not exist.
+  if (barber.isPublic !== true) return null
 
   const barberId = String(barber.id)
   const cityObj = (typeof barber.city === 'object' ? barber.city : null) as City | null
@@ -80,57 +83,77 @@ export async function getBarberPageData(
   startOfToday.setHours(0, 0, 0, 0)
   const endOfToday = new Date(startOfToday)
   endOfToday.setDate(endOfToday.getDate() + 1)
+  // Bookable window (matches the reservation wizard): from today up to
+  // `BOOKING_WINDOW_DAYS` days ahead.
+  const endOfWindow = new Date(startOfToday)
+  endOfWindow.setDate(endOfWindow.getDate() + BOOKING_WINDOW_DAYS)
 
-  const [serviceRes, commentsRes, appointmentsToday, relatedRes] = await Promise.all([
-    serviceIds.length > 0
-      ? payload.find({
-          collection: 'services',
-          depth: 1,
-          where: { and: [{ id: { in: serviceIds } }, { isActive: { equals: true } }] },
-          sort: 'name',
-          limit: 100,
-        })
-      : Promise.resolve({ docs: [] as ServiceDoc[] }),
-    payload.find({
-      collection: 'comments',
-      depth: 1,
-      where: {
-        and: [
-          { barber: { equals: barberId } },
-          ...COMMENT_STATUSES.map((status) => ({ status: { equals: status } })),
-        ],
-      },
-      sort: '-createdAt',
-      limit: COMMENTS_PAGE_SIZE,
-    }),
-    payload.count({
-      collection: 'appointments',
-      where: {
-        and: [
-          { barber: { equals: barberId } },
-          { status: { equals: 'available' } },
-          {
-            fromDate: {
-              greater_than_equal: startOfToday.toISOString(),
-              less_than: endOfToday.toISOString(),
+  const [serviceRes, commentsRes, appointmentsToday, availableSlots, relatedRes] =
+    await Promise.all([
+      serviceIds.length > 0
+        ? payload.find({
+            collection: 'services',
+            depth: 1,
+            where: { and: [{ id: { in: serviceIds } }, { isActive: { equals: true } }] },
+            sort: 'name',
+            limit: 100,
+          })
+        : Promise.resolve({ docs: [] as ServiceDoc[] }),
+      payload.find({
+        collection: 'comments',
+        depth: 1,
+        where: {
+          and: [
+            { barber: { equals: barberId } },
+            ...COMMENT_STATUSES.map((status) => ({ status: { equals: status } })),
+          ],
+        },
+        sort: '-createdAt',
+        limit: COMMENTS_PAGE_SIZE,
+      }),
+      payload.count({
+        collection: 'appointments',
+        where: {
+          and: [
+            { barber: { equals: barberId } },
+            { status: { equals: 'available' } },
+            {
+              fromDate: {
+                greater_than_equal: startOfToday.toISOString(),
+                less_than: endOfToday.toISOString(),
+              },
             },
-          },
-        ],
-      },
-    }),
-    payload.find({
-      collection: 'barbers',
-      depth: 2,
-      where: {
-        and: [
-          { id: { not_equals: barberId } },
-          ...(cityObj ? [{ city: { equals: String(cityObj.id) } }] : []),
-        ],
-      },
-      sort: '-rating',
-      limit: 4,
-    }),
-  ])
+          ],
+        },
+      }),
+      payload.count({
+        collection: 'appointments',
+        where: {
+          and: [
+            { barber: { equals: barberId } },
+            { status: { equals: 'available' } },
+            {
+              fromDate: {
+                greater_than_equal: startOfToday.toISOString(),
+                less_than: endOfWindow.toISOString(),
+              },
+            },
+          ],
+        },
+      }),
+      payload.find({
+        collection: 'barbers',
+        depth: 2,
+        where: {
+          and: [
+            { id: { not_equals: barberId } },
+            ...(cityObj ? [{ city: { equals: String(cityObj.id) } }] : []),
+          ],
+        },
+        sort: '-rating',
+        limit: 4,
+      }),
+    ])
 
   const userObj =
     typeof barber.user === 'object' && barber.user !== null ? barber.user : null
@@ -203,7 +226,7 @@ export async function getBarberPageData(
 
   const profile: BarberProfile = {
     id: barberId,
-    slug: barber.shopSlug || barberId,
+    slug: barberId,
     shopName: barber.shopName,
     barberName:
       typeof barber.user === 'object' && barber.user !== null
@@ -252,6 +275,7 @@ export async function getBarberPageData(
       description: s.description ?? undefined,
       image: toImg(s.icon, s.name) ?? undefined,
     })),
+    canBook: serviceRes.docs.length > 0 && (availableSlots?.totalDocs ?? 0) > 0,
     comments: commentsRes.docs.map((c: CommentDoc) => {
       const author = typeof c.author === 'object' ? c.author : null
       return {
@@ -284,7 +308,7 @@ export async function getBarberPageData(
     const relCity = typeof b.city === 'object' ? b.city : null
     return {
       id: String(b.id),
-      slug: b.shopSlug || String(b.id),
+      slug: String(b.id),
       shopName: b.shopName,
       rating: b.rating ?? 0,
       reviewCount: b.reviewCount ?? 0,

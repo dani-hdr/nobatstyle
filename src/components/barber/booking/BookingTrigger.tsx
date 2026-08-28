@@ -24,6 +24,8 @@ type BookingTriggerProps = Omit<ComponentProps<typeof Button>, 'onClick' | 'chil
   icon?: ReactNode
   initialServiceId?: string
   barberId?: string
+  /** True when the shop offers no service or has no free slot. */
+  unavailable?: boolean
 }
 
 /**
@@ -38,6 +40,7 @@ export function BookingTrigger({
   initialServiceId,
   state = 'booking',
   barberId,
+  unavailable = false,
   className,
   ...buttonProps
 }: BookingTriggerProps) {
@@ -52,7 +55,11 @@ export function BookingTrigger({
     setLocalState(state)
   }, [state])
 
-  const disabled = buttonProps.disabled || sending || localState === 'pending'
+  // Only the actual «رزرو نوبت» (booking) CTA is blocked when the shop has no
+  // service or no free slot; membership requests stay available.
+  const noAvailability = localState === 'booking' && unavailable
+
+  const disabled = buttonProps.disabled || sending || localState === 'pending' || noAvailability
 
   const onClick = () => {
     setError(null)
@@ -101,6 +108,11 @@ export function BookingTrigger({
       {localState === 'pending' && (
         <p className='text-muted-foreground mt-1.5 text-center text-xs'>
           تا زمان تایید آرایشگر امکان رزرو وجود ندارد
+        </p>
+      )}
+      {noAvailability && (
+        <p className='text-muted-foreground mt-1.5 text-center text-xs'>
+          این آرایشگاه در حال حاضر خدمتی ثبت نکرده یا نوبت آزاد ندارد.
         </p>
       )}
       {error && <p className='text-destructive mt-1.5 text-center text-xs'>{error}</p>}

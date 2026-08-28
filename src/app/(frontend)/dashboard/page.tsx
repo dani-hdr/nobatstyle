@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { BarberDashboard } from '@/components/dashboard/BarberDashboard'
 import { CustomerDashboard } from '@/components/dashboard/CustomerDashboard'
 import { Container } from '@/components/layout/Container'
+import { isProfileComplete } from '@/lib/profile-completion.server'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { ROLES } from '@/utils/constants'
@@ -33,6 +34,9 @@ export default async function DashboardPage() {
   })) as User
 
   if (me.role === ROLES.ADMIN) redirect('/admin')
+
+  // Incomplete accounts must finish their profile before entering the dashboard.
+  if (!(await isProfileComplete(payload, me))) redirect('/profile')
 
   return (
     <Container className="py-8 md:py-12">

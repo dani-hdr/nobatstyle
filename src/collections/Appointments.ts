@@ -100,6 +100,20 @@ export const Appointments: CollectionConfig = {
         // barber has approved their request (or booked before the rule).
         if (req.user.role === ROLES.CUSTOMER) {
           const requesterId = String(req.user.id)
+
+          // Customers must have a name so barbers know who is booking.
+          const customerUser = await req.payload
+            .findByID({
+              collection: 'users',
+              id: requesterId,
+              depth: 0,
+              overrideAccess: true,
+            })
+            .catch(() => null)
+          if (!customerUser?.name?.trim()) {
+            throw new APIError('برای رزرو ابتدا نام خود را در پروفایل تکمیل کنید', 403)
+          }
+
           const barberDoc = await req.payload.findByID({
             collection: 'barbers',
             id: barberId,

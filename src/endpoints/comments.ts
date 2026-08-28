@@ -4,12 +4,16 @@ import type { Endpoint as PayloadEndpoint } from 'payload'
 export const COMMENTS_PAGE_SIZE = 5
 
 /**
- * GET /api/comments?barber=...&page=1&limit=5
+ * GET /api/comments-list?barber=...&page=1&limit=5
  * Paginated active comments for a barber, mapped to safe client fields.
  * Author usernames (phone numbers) are never exposed.
+ *
+ * Note: this path intentionally avoids `/comments`, which is routed to the
+ * built-in `comments` collection REST endpoints (first segment = collection
+ * slug) and would shadow this handler.
  */
 export const commentsListEndpoint: PayloadEndpoint = {
-  path: '/comments',
+  path: '/comments-list',
   method: 'get',
   handler: async (req) => {
     const url = new URL(req.url || '')

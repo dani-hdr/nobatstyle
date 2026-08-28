@@ -16,10 +16,10 @@ export type DashUser = {
 export type DashBarber = {
   id: string
   shopName: string
-  shopSlug?: string | null
   rating?: number | null
   reviewCount?: number | null
   city?: Ref<{ id: string; name?: string }>
+  avatar?: { url?: string | null; alt?: string | null } | null
 }
 
 export type DashService = {
@@ -61,6 +61,7 @@ export type CustomerDashboardData = {
   pastAppointments: DashAppointment[]
   cancelledAppointments: DashAppointment[]
   notifications: DashNotification[]
+  barbers?: DashBarber[]
 }
 
 export type DashSubscriptionState = {
@@ -80,7 +81,9 @@ export type BarberDashboardData = {
   barber: DashBarber
   appointments: DashAppointment[]
   newRequests: DashAppointment[]
+  customers?: DashUser[]
   customerRequests?: DashCustomerRequest[]
+  services: DashService[]
   comments: DashComment[]
   notifications: DashNotification[]
   subscription: DashSubscriptionState

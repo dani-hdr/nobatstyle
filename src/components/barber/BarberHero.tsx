@@ -98,6 +98,7 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
             size="lg"
             className='w-full mt-auto'
             variant={'secondary'}
+            unavailable={!barber.canBook}
           />
         </CardFooter>
 

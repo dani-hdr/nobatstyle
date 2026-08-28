@@ -155,6 +155,9 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  /**
+   * برای فعال‌شدن حساب، نام خود را در پروفایل کامل کنید.
+   */
   name?: string | null;
   role: 'customer' | 'barber' | 'admin';
   avatar?: (string | null) | Media;
@@ -260,10 +263,6 @@ export interface Barber {
   id: string;
   user?: (string | null) | User;
   shopName: string;
-  /**
-   * شناسه یکتا برای آدرس پروفایل
-   */
-  shopSlug?: string | null;
   city: string | City;
   address?: string | null;
   /**
@@ -281,6 +280,10 @@ export interface Barber {
   experienceYears?: number | null;
   rating?: number | null;
   reviewCount?: number | null;
+  /**
+   * وقتی نام، نام آرایشگاه و شهر کامل باشد، این آرایشگاه به‌صورت خودکار فعال می‌شود.
+   */
+  isPublic?: boolean | null;
   /**
    * وقت‌هایی که این آرایشگر در یک بازه زمانی مشخص ارائه می‌دهد.
    */
@@ -641,7 +644,6 @@ export interface CitiesSelect<T extends boolean = true> {
 export interface BarbersSelect<T extends boolean = true> {
   user?: T;
   shopName?: T;
-  shopSlug?: T;
   city?: T;
   address?: T;
   location?: T;
@@ -652,6 +654,7 @@ export interface BarbersSelect<T extends boolean = true> {
   experienceYears?: T;
   rating?: T;
   reviewCount?: T;
+  isPublic?: T;
   appointments?: T;
   services?: T;
   customers?: T;

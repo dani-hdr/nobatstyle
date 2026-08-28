@@ -4,7 +4,6 @@ import { Award, ExternalLink, Star, Store, UserRound, Users } from 'lucide-react
 import Link from 'next/link'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { faDate } from '@/lib/dashboard-types'
 
@@ -40,10 +39,11 @@ export function BarberProfile() {
     <div className="space-y-8">
       <ProfileHeaderCard
         user={data.user}
+        complete={data.profileComplete}
         subtitle={
-          barber?.shopSlug ? (
+          barber?.id ? (
             <Link
-              href={`/barbers/${barber.shopSlug}`}
+              href={`/barbers/${barber.id}`}
               className="text-primary mt-1 inline-flex items-center gap-1 text-sm underline-offset-4 hover:underline"
             >
               مشاهده صفحه عمومی آرایشگاه

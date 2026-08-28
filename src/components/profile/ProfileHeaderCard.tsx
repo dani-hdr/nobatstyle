@@ -1,14 +1,18 @@
 'use client'
 
-import { Camera, Loader2, Pencil } from 'lucide-react'
+import { Camera, Loader2, Pencil, User } from 'lucide-react'
 import * as React from 'react'
 
+import {
+  Alert,
+  AlertDescription
+} from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import type { ProfileUser } from '@/lib/profile-types'
 
@@ -18,11 +22,14 @@ export function ProfileHeaderCard({
   user,
   badge,
   subtitle,
+  complete,
   onUpdated,
 }: {
   user: ProfileUser
   badge?: React.ReactNode
   subtitle?: React.ReactNode
+  /** Set to true when the profile is fully complete (no activation banner). */
+  complete?: boolean
   onUpdated: () => void | Promise<void>
 }) {
   const [editOpen, setEditOpen] = React.useState(false)
@@ -31,6 +38,15 @@ export function ProfileHeaderCard({
 
   return (
     <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+
+      {complete === false && (
+        <Alert variant='destructive'>
+          <User />
+          <AlertDescription>
+            برای فعال‌شدن حساب خود، اطلاعات پروفایل را کامل کنید.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="relative">
         <Avatar className="size-20 border-2 md:size-24">
           {user.avatar?.url && <AvatarImage src={user.avatar.url} alt={user.avatar.alt} />}
@@ -48,7 +64,7 @@ export function ProfileHeaderCard({
         </button>
       </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-fit flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="truncate text-xl font-bold tracking-tight md:text-2xl">
             {user.name || 'کاربر نوبت‌استایل'}
@@ -122,7 +138,7 @@ function EditPersonalInfoModal({
           body: (() => {
             const fd = new FormData()
             fd.append('file', file)
-            fd.append('alt', 'تصویر پروفایل')
+            fd.append('_payload', JSON.stringify({ alt: 'تصویر پروفایل' }))
             return fd
           })(),
         })

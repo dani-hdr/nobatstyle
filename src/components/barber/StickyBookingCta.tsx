@@ -20,6 +20,7 @@ export function StickyBookingCta({ barber }: { barber: BarberProfile }) {
           icon={<CalendarPlus className="size-5" />}
           size="lg"
           className="rounded-lg"
+          unavailable={!barber.canBook}
         />
       </div>
     </div>

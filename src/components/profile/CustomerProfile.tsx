@@ -58,7 +58,7 @@ export function CustomerProfile() {
 
   return (
     <div className="space-y-8">
-      <ProfileHeaderCard user={data.user} onUpdated={reload} />
+      <ProfileHeaderCard user={data.user} complete={data.profileComplete} onUpdated={reload} />
 
       {/* Quick actions */}
       <section className="grid gap-3 sm:grid-cols-2">

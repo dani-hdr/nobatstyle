@@ -38,7 +38,7 @@ export function BarberComments({
     if (loadingMore) return
     setLoadingMore(true)
     try {
-      const res = await fetch(`/api/comments?barber=${barberId}&page=${page + 1}`)
+      const res = await fetch(`/api/comments-list?barber=${barberId}&page=${page + 1}`)
       if (res.ok) {
         const data = await res.json()
         setItems((prev) => [...prev, ...(data.comments ?? [])])

@@ -2,6 +2,7 @@ import type { Endpoint as PayloadEndpoint, PayloadRequest } from 'payload'
 import { APIError } from 'payload'
 
 import { getBarberIdForUser } from '../lib/barber-user'
+import { isProfileComplete } from '../lib/profile-completion.server'
 import { ROLES } from '../utils/constants'
 
 type ProfileBody = {
@@ -9,7 +10,6 @@ type ProfileBody = {
   avatarId?: string | null
   shop?: {
     shopName?: string
-    shopSlug?: string
     cityId?: string | null
     address?: string | null
     phone?: string | null
@@ -25,38 +25,6 @@ type ProfileBody = {
 function requireUser(req: { user?: { id: string | number; role?: string } | null }) {
   if (!req.user) throw new APIError('ابتدا وارد حساب کاربری شوید', 401)
   return req.user
-}
-
-/** Keeps only sane slug characters; returns null when nothing usable remains. */
-function normalizeSlug(input: string): string | null {
-  const slug = input
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_]+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return slug.length >= 2 ? slug : null
-}
-
-async function ensureUniqueSlug(
-  payload: PayloadRequest['payload'],
-  desired: string,
-): Promise<string> {
-  let candidate = desired
-  for (let i = 0; i < 5; i++) {
-    const { docs } = await payload.find({
-      collection: 'barbers',
-      where: { shopSlug: { equals: candidate } },
-      limit: 1,
-      depth: 0,
-      pagination: false,
-      overrideAccess: true,
-    })
-    if (docs.length === 0) return candidate
-    candidate = `${desired}-${i + 2}`
-  }
-  throw new APIError('شناسه آرایشگاه تکراری است؛ مقدار دیگری وارد کنید', 409)
 }
 
 /**
@@ -92,7 +60,11 @@ export const profileGetEndpoint: PayloadEndpoint = {
     }
 
     if (me.role !== ROLES.BARBER) {
-      return Response.json({ user: base, barber: null })
+      return Response.json({
+        user: base,
+        barber: null,
+        profileComplete: await isProfileComplete(req.payload, me),
+      })
     }
 
     const barberId = await getBarberIdForUser(req.payload, userId)
@@ -121,11 +93,11 @@ export const profileGetEndpoint: PayloadEndpoint = {
 
     return Response.json({
       user: base,
+      profileComplete: await isProfileComplete(req.payload, me),
       barber: barberDoc
         ? {
             id: barberDoc.id,
             shopName: barberDoc.shopName,
-            shopSlug: barberDoc.shopSlug ?? null,
             city:
               barberDoc.city && typeof barberDoc.city === 'object'
                 ? { id: barberDoc.city.id, name: barberDoc.city.name }
@@ -188,7 +160,7 @@ export const profileUpdateEndpoint: PayloadEndpoint = {
     if (body.name !== undefined) {
       const name = typeof body.name === 'string' ? body.name.trim() : ''
       if (name.length > 60) throw new APIError('نام نمی‌تواند بیش از ۶۰ نویسه باشد', 400)
-      userData.name = name || null
+      userData.name = name
     }
     if (body.avatarId !== undefined) {
       userData.avatar = body.avatarId || null
@@ -274,17 +246,12 @@ export const profileUpdateEndpoint: PayloadEndpoint = {
           req,
         })
       } else {
-        // First save: the barbers collection requires a name, city and slug.
+        // First save: the barbers collection requires a shop name and city.
         const shopName = String(barberData.shopName ?? '').trim()
         const cityId = barberData.city ? String(barberData.city) : ''
         if (!shopName || !cityId) {
           throw new APIError('برای ساخت پروفایل آرایشگاه، نام آرایشگاه و شهر الزامی است', 400)
         }
-        const normalized =
-          normalizeSlug(shop.shopSlug || '') ??
-          normalizeSlug(shopName) ??
-          `shop-${Date.now().toString(36)}`
-        barberData.shopSlug = await ensureUniqueSlug(req.payload, normalized)
         barberData.user = userId
         await req.payload.create({
           collection: 'barbers',

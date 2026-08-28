@@ -7,7 +7,6 @@ import { getPayload } from 'payload'
 export type ListBarber = {
   id: string
   shopName: string
-  shopSlug?: string | null
   rating?: number | null
   reviewCount?: number | null
   createdAt: string
@@ -57,7 +56,6 @@ export async function getBarbers({
     docs: docs.map((d) => ({
       id: d.id,
       shopName: d.shopName,
-      shopSlug: d.shopSlug,
       rating: d.rating,
       reviewCount: d.reviewCount,
       createdAt: d.createdAt,

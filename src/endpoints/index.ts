@@ -81,7 +81,7 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
       return res.docs
     }
 
-    const [appointments, past, cancelled, notifications] = await Promise.all([
+    const [appointments, past, cancelled, notifications, barbersRes] = await Promise.all([
       findMy(),
       findMy(),
       findMy('cancelled'),
@@ -95,7 +95,49 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
         overrideAccess: false,
         req,
       }),
+      // Barbers that accepted this customer: `customers` contains the user id.
+      req.payload.find({
+        collection: 'barbers',
+        depth: 1,
+        where: { customers: { contains: me } },
+        sort: '-createdAt',
+        limit: 100,
+        overrideAccess: false,
+        req,
+      }),
     ])
+
+    // Barber covers/avatars live on the owner's user doc, which customers
+    // cannot populate (users are self-read), so resolve them explicitly.
+    const myBarbers = await Promise.all(
+      barbersRes.docs.map(async (b) => {
+        const ownerId =
+          typeof b.user === 'object' && b.user !== null ? String(b.user.id) : null
+        const owner = ownerId
+          ? await req.payload
+              .findByID({
+                collection: 'users',
+                id: ownerId,
+                depth: 0,
+                overrideAccess: true,
+                req,
+              })
+              .catch(() => null)
+          : null
+        const avatar =
+          owner?.avatar && typeof owner.avatar === 'object' && owner.avatar.url
+            ? owner.avatar.url
+            : null
+        return {
+          id: String(b.id),
+          shopName: b.shopName,
+          rating: b.rating ?? 0,
+          reviewCount: b.reviewCount ?? 0,
+          city: b.city,
+          avatar: avatar ? { url: avatar } : null,
+        }
+      }),
+    )
 
     return Response.json({
       nextAppointment: appointments.filter((a) => a.status === 'reserved')[0] ?? null,
@@ -103,6 +145,7 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
       pastAppointments: past,
       cancelledAppointments: cancelled,
       notifications: notifications.docs,
+      barbers: myBarbers,
     })
   },
 }
@@ -170,10 +213,56 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
 
     const allAppointments = appointmentsRes.docs
 
+    // All of this barber's approved customers. `barber.customers` holds user
+    // ids; customers are self-read so the docs are resolved explicitly here.
+    const customers = await Promise.all(
+      (barber?.customers ?? []).map(async (c) => {
+        const customerId =
+          typeof c === 'object' && c !== null ? String(c.id) : String(c)
+        const user = await req.payload
+          .findByID({
+            collection: 'users',
+            id: customerId,
+            depth: 0,
+            overrideAccess: true,
+            req,
+          })
+          .catch(() => null)
+        if (!user) return null
+        return {
+          id: customerId,
+          name: user.name ?? null,
+          username: user.username ?? null,
+          avatar: user.avatar ?? null,
+        }
+      }),
+    ).then((list) => list.filter((c): c is NonNullable<typeof c> => c !== null))
+
+    // The barber's active offered services (used by the «add slot» form).
+    const serviceIds = (barber?.services ?? []).map((s) =>
+      String(typeof s === 'object' && s !== null ? s.id : s),
+    )
+    const servicesRes = serviceIds.length
+      ? await req.payload.find({
+          collection: 'services',
+          depth: 0,
+          where: {
+            and: [{ id: { in: serviceIds } }, { isActive: { equals: true } }],
+          },
+          sort: 'name',
+          limit: 100,
+          overrideAccess: false,
+          req,
+        })
+      : { docs: [] as { id: string; name?: string }[] }
+    const services = servicesRes.docs.map((s) => ({ id: String(s.id), name: s.name ?? '' }))
+
     return Response.json({
       barber,
       appointments: allAppointments,
       newRequests: allAppointments.filter((a) => a.status === 'reserved'),
+      customers,
+      services,
       // Customer docs are not population-readable by barbers (users are
       // self-read), so names are resolved explicitly here.
       customerRequests: await Promise.all(

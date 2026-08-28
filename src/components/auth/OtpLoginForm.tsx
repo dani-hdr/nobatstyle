@@ -17,7 +17,12 @@ type Role = (typeof ROLE_OPTIONS)[number]['value']
 
 type Stage = 'phone' | 'code'
 
-async function post(url: string, body: unknown): Promise<{ ok: boolean; error?: string }> {
+type PostResult = { ok: boolean; error?: string; profileComplete?: boolean }
+
+async function post(
+  url: string,
+  body: unknown,
+): Promise<PostResult> {
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -26,9 +31,11 @@ async function post(url: string, body: unknown): Promise<{ ok: boolean; error?: 
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      return { ok: false, error: data?.error ?? 'خطایی رخ داد.' }
+      const message =
+        data?.error ?? data?.errors?.[0]?.message ?? 'خطایی رخ داد.'
+      return { ok: false, error: message }
     }
-    return { ok: true }
+    return { ok: true, profileComplete: Boolean(data?.profileComplete) }
   } catch {
     return { ok: false, error: 'عدم ارتباط با سرور.' }
   }
@@ -67,7 +74,8 @@ export function OtpLoginForm() {
       setError(res.error ?? 'خطایی رخ داد.')
       return
     }
-    router.push('/dashboard')
+    // Incomplete accounts must finish their profile first.
+    router.push(res.profileComplete ? '/dashboard' : '/profile')
     router.refresh()
   }
 

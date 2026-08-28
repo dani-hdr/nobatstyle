@@ -34,7 +34,6 @@ import { getStoredCityId, setStoredCityId } from '@/lib/city-storage'
 type ResultBarber = {
   id: string
   shopName: string
-  shopSlug?: string | null
   rating?: number | null
   user?: { avatar?: ({ url?: string | null; alt?: string | null } | string | number | null) | null } | string | number | null
   city?: ({ id: string; name: string } | string | null) | null
@@ -251,7 +250,7 @@ function BarberSearchContent({
                 {results.slice(0, 2).map((barber) => (
                   <li key={barber.id}>
                     <Link
-                      href={`/barbers/${barber.shopSlug || barber.id}`}
+                      href={`/barbers/${barber.id}`}
                       onClick={onSelect}
                       className="hover:bg-accent flex items-center gap-3 rounded-lg p-3 transition-colors"
                     >

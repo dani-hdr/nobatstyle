@@ -68,7 +68,7 @@ export default async function BarbersPage({
           {docs.map((barber) => (
             <Link
               key={barber.id}
-              href={`/barbers/${barber.shopSlug || barber.id}`}
+              href={`/barbers/${barber.id}`}
               className="hover:bg-accent border bg-background flex items-center gap-4 rounded-2xl p-4 transition-colors"
             >
               <div className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-2xl">

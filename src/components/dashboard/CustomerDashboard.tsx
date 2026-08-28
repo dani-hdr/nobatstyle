@@ -11,9 +11,12 @@ import {
   MessageCircle,
   Scissors,
   Search,
+  Star,
+  UserCheck,
   UserRound,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
@@ -166,6 +169,70 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
         })()}
       </section>
 
+      {/* My barbers */}
+      <section className="space-y-4">
+        <SectionTitle
+          icon={UserCheck}
+          title="آرایشگرهای من"
+          extra={
+            (data.barbers?.length ?? 0) > 0
+              ? `${(data.barbers?.length ?? 0).toLocaleString('fa-IR')} آرایشگر`
+              : undefined
+          }
+        />
+        {(data.barbers ?? []).length === 0 ? (
+          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
+            هنوز به آرایشگری متصل نیستید؛ از میان آرایشگرها درخواست عضویت بدهید.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {data.barbers!.map((b) => (
+              <Link
+                key={b.id}
+                href={`/barbers/${b.id}`}
+                className="border bg-background hover:bg-accent flex items-center gap-4 rounded-2xl p-4 transition-colors"
+              >
+                <div className="bg-muted relative size-12 shrink-0 overflow-hidden rounded-xl">
+                  {b.avatar?.url ? (
+                    <Image
+                      src={b.avatar.url}
+                      alt={b.avatar.alt || b.shopName}
+                      fill
+                      sizes="48px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="text-muted-foreground flex size-full items-center justify-center text-lg font-bold">
+                      {b.shopName.slice(0, 1)}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-semibold">{b.shopName}</h3>
+                  {typeof b.city === 'object' && b.city?.name && (
+                    <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                      <MapPin className="size-3" />
+                      {b.city.name}
+                    </span>
+                  )}
+                </div>
+                {b.rating ? (
+                  <div className="flex shrink-0 flex-col items-center">
+                    <span className="flex items-center gap-1 text-sm font-semibold">
+                      <Star className="fill-amber-400 size-4 text-amber-400" />
+                      {b.rating.toLocaleString('fa-IR')}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {(b.reviewCount ?? 0).toLocaleString('fa-IR')} بازخورد
+                    </span>
+                  </div>
+                ) : null}
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Notifications */}
       <section className="space-y-4">
         <SectionTitle icon={LogIn} title="اعلان‌ها" />
@@ -218,9 +285,9 @@ function NextAppointmentCard({ appointment }: { appointment: DashAppointment }) 
               <Clock className="size-4" />
               ساعت {faTime(appointment.fromDate)}
             </span>
-            {barber?.shopSlug && (
+            {barber?.id && (
               <Link
-                href={`/barbers/${barber.shopSlug}`}
+                href={`/barbers/${barber.id}`}
                 className="text-primary flex items-center gap-1 underline-offset-4 hover:underline"
               >
                 <MapPin className="size-4" />
@@ -269,8 +336,8 @@ function AppointmentCard({
           {barber?.shopName && (
             <p className="flex items-center gap-1.5">
               <Scissors className="size-3.5" />
-              {barber.shopSlug ? (
-                <Link href={`/barbers/${barber.shopSlug}`} className="hover:underline">
+              {barber.id ? (
+                <Link href={`/barbers/${barber.id}`} className="hover:underline">
                   {barber.shopName}
                 </Link>
               ) : (
@@ -287,9 +354,11 @@ function AppointmentCard({
 export function SectionTitle({
   icon: Icon,
   title,
+  extra,
 }: {
   icon: LucideIcon
   title: string
+  extra?: string
 }) {
   return (
     <h2 className="flex items-center gap-2 text-lg font-bold">
@@ -297,6 +366,7 @@ export function SectionTitle({
         <Icon className="size-4.5" />
       </span>
       {title}
+      {extra && <span className="text-muted-foreground text-xs font-normal">{extra}</span>}
     </h2>
   )
 }

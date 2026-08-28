@@ -3,6 +3,7 @@ import type { Endpoint as PayloadEndpoint } from 'payload'
 import { APIError, jwtSign } from 'payload'
 
 import { deliverOtp, generateOtpCode, hashOtpCode, otpTtlMilliseconds } from '../lib/otp'
+import { isProfileComplete } from '../lib/profile-completion.server'
 import { ROLES } from '../utils/constants'
 import type { Role } from '../utils/constants'
 
@@ -118,6 +119,9 @@ export const verifyOtpEndpoint: PayloadEndpoint = {
     }
 
     if (!user) {
+      // New account: name is optional at signup and completed later in the
+      // profile. Until the required profile fields are filled the account is
+      // not "active" and the client redirects to /profile.
       user = await req.payload.create({
         collection: AUTH_COLLECTION,
         overrideAccess: true,
@@ -125,12 +129,14 @@ export const verifyOtpEndpoint: PayloadEndpoint = {
         data: {
           username: phone,
           role,
-          // No email/name needed — identity is the phone (username) authenticated
-          // via OTP. Password only exists so admins can share this auth collection.
+          // Identity is the phone (username) authenticated via OTP. Password
+          // only exists so admins can share this auth collection.
           password: randomBytes(24).toString('hex'),
         },
       })
     }
+
+    const profileComplete = await isProfileComplete(req.payload, user)
 
     user.collection = AUTH_COLLECTION
     const collectionConfig = req.payload.collections[AUTH_COLLECTION].config
@@ -159,7 +165,7 @@ export const verifyOtpEndpoint: PayloadEndpoint = {
       ...(secure ? ['Secure'] : []),
     ].join('; ')
 
-    const result = Response.json({ token, user })
+    const result = Response.json({ token, user, profileComplete })
     result.headers.set('Set-Cookie', cookie)
     return result
   },

@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   CalendarClock,
+  CalendarPlus,
   CalendarX2,
   Check,
   ClipboardList,
@@ -15,19 +16,31 @@ import {
   Star,
   UserPlus,
   UserRound,
+  Users,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { PersianDatePicker } from '@/components/ui/persian-date-picker'
+import { PersianTimePicker } from '@/components/ui/persian-time-picker'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/utils/cn'
 import type {
   BarberDashboardData,
   DashAppointment,
+  DashService,
   DashSubscriptionState,
 } from '@/lib/dashboard-types'
 import { faDate, faTime } from '@/lib/dashboard-types'
@@ -102,9 +115,9 @@ export function BarberDashboard({ userName }: { userName?: string }) {
               پیام‌ها
             </Link>
           </Button>
-          {data.barber.shopSlug && (
+          {data.barber.id && (
             <Button asChild variant="outline">
-              <Link href={`/barbers/${data.barber.shopSlug}`}>
+              <Link href={`/barbers/${data.barber.id}`}>
                 مشاهده صفحه عمومی
                 <ExternalLink className="size-4" />
               </Link>
@@ -204,6 +217,48 @@ export function BarberDashboard({ userName }: { userName?: string }) {
             })}
           </div>
         )}
+      </section>
+
+      {/* Customers */}
+      <section className="space-y-4">
+        <SectionTitle
+          icon={Users}
+          title="مشتریان من"
+          extra={
+            (data.customers?.length ?? 0) > 0
+              ? `${(data.customers?.length ?? 0).toLocaleString('fa-IR')} مشتری`
+              : undefined
+          }
+        />
+        {(data.customers ?? []).length === 0 ? (
+          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
+            هنوز مشتری ندارید؛ درخواست‌های مشتریان را از بالا تایید کنید.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {data.customers!.map((c) => (
+              <Card key={c.id} className="py-0">
+                <CardContent className="flex items-center gap-3 px-4 py-4">
+                  <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold">
+                    {(c.name || c.username || 'ک').slice(0, 1)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{c.name || 'کاربر'}</p>
+                    {c.username && (
+                      <p className="text-muted-foreground truncate text-xs">{c.username}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Add appointment slot */}
+      <section className="space-y-4">
+        <SectionTitle icon={CalendarPlus} title="افزودن نوبت" />
+        <AddSlotForm services={data.services} onAdded={reload} />
       </section>
 
       {/* Incoming appointments */}
@@ -339,6 +394,136 @@ export function BarberDashboard({ userName }: { userName?: string }) {
   )
 }
 
+/** Creates a new available appointment window for the barber's own shop. */
+function AddSlotForm({
+  services,
+  onAdded,
+}: {
+  services: DashService[]
+  onAdded: () => void | Promise<void>
+}) {
+  const [serviceId, setServiceId] = useState('')
+  const [date, setDate] = useState<Date | undefined>(undefined)
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+
+  const canSubmit = Boolean(serviceId && date && from && to) && !pending
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (pending || !serviceId || !date || !from || !to) return
+    const [fh, fm] = from.split(':').map(Number)
+    const [th, tm] = to.split(':').map(Number)
+    const fromDate = new Date(date)
+    fromDate.setHours(fh, fm, 0, 0)
+    const toDate = new Date(date)
+    toDate.setHours(th, tm, 0, 0)
+    if (!Number.isFinite(fromDate.getTime()) || !Number.isFinite(toDate.getTime())) {
+      setError('زمان واردشده معتبر نیست.')
+      return
+    }
+    if (toDate <= fromDate) {
+      setError('ساعت پایان باید بعد از ساعت شروع باشد.')
+      return
+    }
+    setPending(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service: serviceId,
+          fromDate: fromDate.toISOString(),
+          toDate: toDate.toISOString(),
+          status: 'available',
+        }),
+      })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          errors?: { message?: string }[]
+        }
+        throw new Error(data.errors?.[0]?.message ?? 'ثبت نوبت ممکن نشد.')
+      }
+      setMessage('نوبت با موفقیت اضافه شد.')
+      setFrom('')
+      setTo('')
+      await onAdded()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در ثبت نوبت.')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  if (services.length === 0) {
+    return (
+      <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
+        برای ثبت نوبت ابتدا از صفحه{' '}
+        <Link href="/profile" className="text-primary underline underline-offset-4">
+          پروفایل
+        </Link>{' '}
+        خدمات خود را انتخاب کنید.
+      </p>
+    )
+  }
+
+  return (
+    <Card className="border-primary/30 py-0">
+      <CardContent className="px-5 py-5">
+        <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="slot-service">خدمت *</Label>
+            <Select value={serviceId} onValueChange={setServiceId} dir="rtl">
+              <SelectTrigger id="slot-service" className="w-full">
+                <SelectValue placeholder="انتخاب خدمت" />
+              </SelectTrigger>
+              <SelectContent>
+                {services.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="slot-date">تاریخ *</Label>
+            <PersianDatePicker value={date} onChange={setDate} placeholder="انتخاب تاریخ" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="slot-from">از ساعت *</Label>
+            <PersianTimePicker value={from} onChange={setFrom} placeholder="انتخاب ساعت" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="slot-to">تا ساعت *</Label>
+            <PersianTimePicker value={to} onChange={setTo} placeholder="انتخاب ساعت" />
+          </div>
+
+          <div className="sm:col-span-2">
+            {(error || message) && (
+              <p className={cn('mb-3 text-sm', error ? 'text-destructive' : 'text-emerald-600')}>
+                {error ?? message}
+              </p>
+            )}
+            <Button type="submit" disabled={!canSubmit} className="w-full sm:w-auto">
+              {pending ? <Loader2 className="size-4 animate-spin" /> : <CalendarPlus className="size-4" />}
+              افزودن نوبت
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
 function StatCard({
   icon: Icon,
   value,
@@ -419,6 +604,7 @@ function BarberAppointmentCard({
 
 function StatusBadge({ status, past }: { status: DashAppointment['status']; past?: boolean }) {
   if (status === 'cancelled') return <Badge variant="destructive">لغو شده</Badge>
+  if (status === 'available') return <Badge variant="warning">آزاد</Badge>
   if (past) return <Badge variant="secondary">انجام شده</Badge>
   return <Badge variant="success">رزرو شده</Badge>
 }

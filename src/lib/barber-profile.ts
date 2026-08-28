@@ -67,6 +67,8 @@ export type BarberProfile = {
   commentsTotal: number
   /** How many days ahead booking is open (today included) */
   availabilityDays: number
+  /** False when the shop offers no service or has no free appointment slot. */
+  canBook: boolean
   bookingState: 'booking' | 'request' | 'pending'
 }
 

@@ -1,11 +1,16 @@
 import type { CollectionConfig, Where } from 'payload'
 import { isAdmin } from '../access'
+import { syncBarberPublic } from '../lib/profile-completion.server'
 import { ROLES } from '../utils/constants'
 
 /**
  * Central barber profile. Rating & reviewCount are denormalized and kept in
  * sync by afterChange hooks on the `comments` collection so the API can sort
  * directly by rating (highly rated) without aggregation.
+ *
+ * A shop is only "public" (`isPublic`) once its owner has filled every required
+ * profile field (own name + shop name + city). Incomplete shops are hidden from
+ * the public directory and their public page is inactive.
  */
 export const Barbers: CollectionConfig = {
   slug: 'barbers',
@@ -16,10 +21,26 @@ export const Barbers: CollectionConfig = {
   admin: {
     useAsTitle: 'shopName',
     group: 'آرایشگاه‌ها',
-    defaultColumns: ['shopName', 'user', 'city', 'rating'],
+    defaultColumns: ['shopName', 'user', 'city', 'rating', 'isPublic'],
   },
   access: {
-    read: () => true,
+    // Only complete ("public") shops are visible to visitors. A barber may
+    // always read their own shop (even while incomplete) to finish setup; admins
+    // see everything.
+    read: ({ req }): Where | boolean => {
+      if (isAdmin({ req })) return true
+      const user = req.user
+      if (user?.role === ROLES.BARBER) {
+        const ownOrPublic: Where = {
+          or: [
+            { isPublic: { equals: true } },
+            { user: { equals: String(user.id) } },
+          ],
+        }
+        return ownOrPublic
+      }
+      return { isPublic: { equals: true } }
+    },
     create: ({ req }) => {
       const u = req.user
       if (!u) return false
@@ -36,6 +57,15 @@ export const Barbers: CollectionConfig = {
       return false
     },
     delete: ({ req }) => isAdmin({ req }),
+  },
+  hooks: {
+    afterChange: [
+      async ({ doc, req }) => {
+        // Keep `isPublic` accurate: a shop is public once its owner's name,
+        // shop name and city are all present.
+        if (doc?.id) await syncBarberPublic(req.payload, String(doc.id))
+      },
+    ],
   },
   endpoints: [
     {
@@ -104,17 +134,6 @@ export const Barbers: CollectionConfig = {
       required: true,
       index: true,
       label: 'نام آرایشگاه',
-    },
-    {
-      name: 'shopSlug',
-      type: 'text',
-      unique: true,
-      required: true,
-      label: 'شناسه آرایشگاه',
-      admin: {
-        description: 'شناسه یکتا برای آدرس پروفایل',
-        condition: (data, siblingData, { user }) => user?.role !== ROLES.BARBER,
-      },
     },
     {
       name: 'city',
@@ -200,6 +219,19 @@ export const Barbers: CollectionConfig = {
       admin: {
         readOnly: true,
         position: 'sidebar',
+      },
+    },
+    {
+      name: 'isPublic',
+      type: 'checkbox',
+      defaultValue: false,
+      index: true,
+      label: 'فعال در سایت',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        description:
+          'وقتی نام، نام آرایشگاه و شهر کامل باشد، این آرایشگاه به‌صورت خودکار فعال می‌شود.',
       },
     },
     {

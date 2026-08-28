@@ -129,7 +129,14 @@ export function BookingDialog({
         setStep(2)
         return
       }
-      if (!res.ok) throw new Error('reserve failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setConfirmError(
+          (data as { errors?: { message?: string }[] })?.errors?.[0]?.message ??
+            'خطا در ثبت رزرو. دوباره تلاش کنید.',
+        )
+        return
+      }
       setSuccess(true)
     } catch {
       setConfirmError('خطا در ثبت رزرو. دوباره تلاش کنید.')

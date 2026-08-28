@@ -249,7 +249,7 @@ function CoverManager({
     try {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('alt', `کاور ${barber.shopName}`)
+      fd.append('_payload', JSON.stringify({ alt: `کاور ${barber.shopName}` }))
       const mediaRes = await fetch('/api/media', { method: 'POST', body: fd })
       if (!mediaRes.ok) throw new Error()
       const mediaData = (await mediaRes.json()) as { doc?: { id?: string } }
@@ -353,7 +353,7 @@ function GalleryManager({
       for (const f of files.slice(0, 10)) {
         const fd = new FormData()
         fd.append('file', f)
-        fd.append('alt', `گالری ${barber.shopName}`)
+        fd.append('_payload', JSON.stringify({ alt: `گالری ${barber.shopName}` }))
         const mediaRes = await fetch('/api/media', { method: 'POST', body: fd })
         if (!mediaRes.ok) continue
         const mediaData = (await mediaRes.json()) as { doc?: { id?: string } }

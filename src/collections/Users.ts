@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isAdmin } from '../access'
+import { getBarberIdForUser } from '../lib/barber-user'
+import { syncBarberPublic } from '../lib/profile-completion.server'
 import { ROLES } from '../utils/constants'
 
 export const Users: CollectionConfig = {
@@ -43,12 +45,27 @@ export const Users: CollectionConfig = {
     delete: ({ req }) => isAdmin({ req }),
     admin: ({ req }) => isAdmin({ req }),
   },
+  hooks: {
+    afterChange: [
+      async ({ doc, req }) => {
+        // A barber's shop is only public once they have a name — keep `isPublic`
+        // in sync whenever the linked user (name) changes.
+        if (doc?.role === ROLES.BARBER && doc?.id) {
+          const barberId = await getBarberIdForUser(req.payload, String(doc.id))
+          if (barberId) await syncBarberPublic(req.payload, barberId)
+        }
+      },
+    ],
+  },
   fields: [
     {
       name: 'name',
       type: 'text',
       maxLength: 60,
       label: 'نام',
+      admin: {
+        description: 'برای فعال‌شدن حساب، نام خود را در پروفایل کامل کنید.',
+      },
     },
     {
       name: 'role',
@@ -62,16 +79,6 @@ export const Users: CollectionConfig = {
         { label: 'آرایشگر', value: ROLES.BARBER },
         { label: 'مدیر', value: ROLES.ADMIN },
       ],
-    },
-    {
-      name: 'username',
-      type: 'text',
-      required: true,
-      unique: true,
-      label: 'شماره تماس',
-      admin: {
-        position: 'sidebar',
-      },
     },
     {
       name: 'avatar',

@@ -21,7 +21,6 @@ export type ProfileUser = {
 export type ProfileBarber = {
   id: string
   shopName: string
-  shopSlug: string | null
   city: { id: string; name: string } | null
   cityId: string | null
   address: string | null
@@ -46,6 +45,8 @@ export type ProfileData = {
   user: ProfileUser
   barber: ProfileBarber | null
   servicesCatalog?: CatalogService[]
+  /** True when the account has completed all required profile fields. */
+  profileComplete?: boolean
 }
 
 /** Body accepted by PATCH /api/profile. */
@@ -54,7 +55,6 @@ export type ProfileUpdateBody = {
   avatarId?: string | null
   shop?: {
     shopName?: string
-    shopSlug?: string
     cityId?: string | null
     address?: string | null
     phone?: string | null

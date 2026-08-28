@@ -21,9 +21,15 @@ export type JalaliDayMeta = {
   available: boolean
 }
 
-/** Determines whether a date is available. Demo rule: closed Fridays; otherwise open. */
-function isAvailable(date: Date): boolean {
-  return date.getDay() !== 5
+/**
+ * Day-level availability. There is no fixed weekday heuristic — whether a day
+ * is open is decided by the barber's actual appointment windows, which the
+ * wizard fetches per selected day (see `TimeStep`). Every day in the booking
+ * window is offered here so a real slot (e.g. Friday 16:00) is never wrongly
+ * blocked.
+ */
+function isAvailable(_date: Date): boolean {
+  return true
 }
 
 /**
@@ -62,9 +68,13 @@ export function buildMonthGrid(now = new Date(), allowedKeys?: Set<string>): Jal
   const year = persianNow.year
   const month = persianNow.month.number
   const monthStart = new DateObject({ calendar: persian, year, month, day: 1 })
-  const daysInMonth = monthStart.add(1, 'month').subtract(1, 'day').day
-
+  // Capture day 1 BEFORE computing daysInMonth — react-date-object's
+  // add()/subtract() mutate the instance, so reading toDate() afterwards would
+  // use the last day of the month and shift every weekday by one.
   const firstOfMonth = monthStart.toDate()
+  const daysInMonth = new DateObject({ calendar: persian, year, month, day: 1 })
+    .add(1, 'month')
+    .subtract(1, 'day').day
   const firstWeekday = (firstOfMonth.getDay() + 1) % 7 // Saturday -> 0
 
   const cells: JalaliCell[] = []

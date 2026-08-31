@@ -81,6 +81,7 @@ export interface Config {
     notifications: Notification;
     subscriptionPlans: SubscriptionPlan;
     subscriptions: Subscription;
+    pages: Page;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -106,6 +107,7 @@ export interface Config {
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     subscriptionPlans: SubscriptionPlansSelect<false> | SubscriptionPlansSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    pages: PagesSelect<false> | PagesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -118,10 +120,12 @@ export interface Config {
   globals: {
     settings: Setting;
     home: Home;
+    footer: Footer;
   };
   globalsSelect: {
     settings: SettingsSelect<false> | SettingsSelect<true>;
     home: HomeSelect<false> | HomeSelect<true>;
+    footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
   widgets: {
@@ -314,6 +318,10 @@ export interface Appointment {
   fromDate: string;
   toDate: string;
   customer?: (string | null) | User;
+  /**
+   * پیامی که مشتری هنگام رزرو نوشته است (اختیاری).
+   */
+  customerMessage?: string | null;
   status: 'available' | 'reserved' | 'cancelled';
   updatedAt: string;
   createdAt: string;
@@ -454,6 +462,37 @@ export interface Subscription {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: string;
+  title: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  status: 'published' | 'draft';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -531,6 +570,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscriptions';
         value: string | Subscription;
+      } | null)
+    | ({
+        relationTo: 'pages';
+        value: string | Page;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -683,6 +726,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   fromDate?: T;
   toDate?: T;
   customer?: T;
+  customerMessage?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -781,6 +825,19 @@ export interface SubscriptionsSelect<T extends boolean = true> {
   expiresAt?: T;
   amount?: T;
   paymentRef?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  generateSlug?: T;
+  slug?: T;
+  content?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -921,6 +978,49 @@ export interface Home {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer".
+ */
+export interface Footer {
+  id: string;
+  brand?: {
+    /**
+     * توضیح کوتاهی که زیر نام سایت در فوتر نمایش داده می‌شود.
+     */
+    aboutText?: string | null;
+  };
+  /**
+   * هر ستون یک عنوان و چند لینک دارد (مثل «دسترسی سریع» یا «پشتیبانی»).
+   */
+  columns?:
+    | {
+        title: string;
+        links?:
+          | {
+              label: string;
+              href: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  socialLinks?:
+    | {
+        icon: 'instagram' | 'telegram' | 'twitter' | 'youtube' | 'whatsapp';
+        label?: string | null;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * متن انتهای فوتر؛ در صورت خالی ماندن از نام سایت استفاده می‌شود.
+   */
+  copyright?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "settings_select".
  */
 export interface SettingsSelect<T extends boolean = true> {
@@ -997,6 +1097,42 @@ export interface HomeSelect<T extends boolean = true> {
         id?: T;
       };
   popularServices?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer_select".
+ */
+export interface FooterSelect<T extends boolean = true> {
+  brand?:
+    | T
+    | {
+        aboutText?: T;
+      };
+  columns?:
+    | T
+    | {
+        title?: T;
+        links?:
+          | T
+          | {
+              label?: T;
+              href?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  socialLinks?:
+    | T
+    | {
+        icon?: T;
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  copyright?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

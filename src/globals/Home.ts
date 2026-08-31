@@ -7,8 +7,9 @@ import { isAdmin } from '../access'
  */
 export const Home: GlobalConfig = {
   slug: 'home',
+  label:'صفحه ی اصلی',
   admin: {
-    group: 'صفحه اصلی',
+    group: 'تنظیمات',
   },
   access: {
     read: () => true,

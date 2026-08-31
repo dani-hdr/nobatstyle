@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/Header'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { DirectionProvider } from '@/components/ui/direction'
 import { getCities } from '@/lib/barber-search'
-import { getSiteInfo } from '@/lib/site'
+import { getFooterContent, getSiteInfo } from '@/lib/site'
 import { getViewer } from '@/lib/viewer.server'
 
 const vazirmatn = Vazirmatn({
@@ -30,7 +30,12 @@ export async function generateMetadata() {
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
-  const [siteInfo, cities, viewer] = await Promise.all([getSiteInfo(), getCities(), getViewer()])
+  const [siteInfo, cities, viewer, footer] = await Promise.all([
+    getSiteInfo(),
+    getCities(),
+    getViewer(),
+    getFooterContent(),
+  ])
 
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
@@ -48,7 +53,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             {children}
           </main>
 
-          <Footer siteName={siteInfo.siteName} quickLinks={siteInfo.navLinks} />
+          <Footer siteName={siteInfo.siteName} content={footer} />
 
           <MobileBottomNav />
         </DirectionProvider>

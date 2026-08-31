@@ -35,6 +35,7 @@ export type DashAppointment = {
   fromDate: string
   toDate: string
   status: 'available' | 'reserved' | 'cancelled'
+  customerMessage?: string | null
 }
 
 export type DashNotification = {
@@ -55,13 +56,25 @@ export type DashComment = {
   createdAt: string
 }
 
+export type CustomerTab = 'upcoming' | 'past' | 'cancelled' | 'barbers' | 'notifications'
+
 export type CustomerDashboardData = {
+  tab: CustomerTab
+  page: number
+  limit: number
+  totalPages: number
+  totalDocs: number
+  counts: {
+    upcoming: number
+    past: number
+    cancelled: number
+    barbers: number
+    notifications: number
+  }
   nextAppointment: DashAppointment | null
   appointments: DashAppointment[]
-  pastAppointments: DashAppointment[]
-  cancelledAppointments: DashAppointment[]
+  barbers: DashBarber[]
   notifications: DashNotification[]
-  barbers?: DashBarber[]
 }
 
 export type DashSubscriptionState = {
@@ -77,15 +90,35 @@ export type DashCustomerRequest = {
   customer: { id: string; name: string | null; username: string | null }
 }
 
+export type BarberTab = 'all' | 'requests' | 'customers' | 'comments' | 'notifications'
+
 export type BarberDashboardData = {
+  tab: BarberTab
+  page: number
+  limit: number
+  totalPages: number
+  totalDocs: number
+  counts: {
+    upcoming: number
+    all: number
+    requests: number
+    customers: number
+    comments: number
+    notifications: number
+  }
+  /** Upcoming appointments — rendered on the page, outside the tabs. */
+  upcoming: DashAppointment[]
+  upcomingPage: number
+  upcomingLimit: number
+  upcomingTotalPages: number
+  upcomingTotalDocs: number
   barber: DashBarber
   appointments: DashAppointment[]
-  newRequests: DashAppointment[]
-  customers?: DashUser[]
-  customerRequests?: DashCustomerRequest[]
-  services: DashService[]
+  customerRequests: DashCustomerRequest[]
+  customers: DashUser[]
   comments: DashComment[]
   notifications: DashNotification[]
+  services: DashService[]
   subscription: DashSubscriptionState
   statistics: {
     completedCount: number

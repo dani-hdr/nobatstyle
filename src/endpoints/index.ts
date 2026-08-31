@@ -1,4 +1,4 @@
-import type { Endpoint as PayloadEndpoint, Where } from 'payload'
+import type { Endpoint as PayloadEndpoint, PayloadRequest, Where } from 'payload'
 import { APIError } from 'payload'
 import { getBarberIdForUser } from '../lib/barber-user'
 import { getBarberSubscriptionState } from '../lib/subscriptions.server'
@@ -55,250 +55,509 @@ function dashboardAuth(req: any, allowed: string[]) {
   if (!allowed.includes(req.user.role)) throw new APIError('Forbidden', 403)
 }
 
+/** Reads `page`/`limit` from the query string with sane bounds. */
+function paginationParams(req: PayloadRequest, defaultLimit = 6): { page: number; limit: number } {
+  const url = new URL(req.url || '')
+  const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
+  const limit = Math.min(20, Math.max(1, Number(url.searchParams.get('limit')) || defaultLimit))
+  return { page, limit }
+}
+
+function readTab(req: PayloadRequest, fallback: string, allowed: readonly string[]): string {
+  const url = new URL(req.url || '')
+  const tab = url.searchParams.get('tab') || fallback
+  return allowed.includes(tab) ? tab : fallback
+}
+
 /**
- * GET /api/customer/dashboard
- * Aggregated, ready-to-render data for the customer dashboard.
+ * GET /api/customer/dashboard?tab=upcoming|past|cancelled|barbers|notifications&page=&limit=
+ * Aggregated, ready-to-render data for the customer dashboard. The requested
+ * tab's list is paginated server-side; counts for every tab are included so
+ * the UI can render badges without extra round-trips.
  */
 export const customerDashboardEndpoint: PayloadEndpoint = {
   path: '/customer/dashboard',
   method: 'get',
   handler: async (req) => {
     dashboardAuth(req, [ROLES.CUSTOMER])
-    const me = req.user!.id
+    const me = String(req.user!.id)
+    const CUSTOMER_TABS = ['upcoming', 'past', 'cancelled', 'barbers', 'notifications'] as const
+    const tab = readTab(req, 'upcoming', CUSTOMER_TABS)
+    const { page, limit } = paginationParams(req)
 
-    const findMy = async (status?: string) => {
-      const where: Where = { customer: { equals: me } }
-      if (status) where.status = { equals: status }
-      const res = await req.payload.find({
-        collection: 'appointments',
-        depth: 1,
-        where,
-        sort: status === 'cancelled' ? '-fromDate' : 'fromDate',
-        limit: 50,
-        overrideAccess: false,
-        req,
-      })
-      return res.docs
+    const now = new Date().toISOString()
+    const isAppointmentTab = tab === 'upcoming' || tab === 'past' || tab === 'cancelled'
+
+    const appointmentWhere = (kind: 'upcoming' | 'past' | 'cancelled'): Where => {
+      if (kind === 'cancelled') {
+        return { and: [{ customer: { equals: me } }, { status: { equals: 'cancelled' } }] }
+      }
+      return {
+        and: [
+          { customer: { equals: me } },
+          { status: { equals: 'reserved' } },
+          { toDate: kind === 'upcoming' ? { greater_than_equal: now } : { less_than: now } },
+        ],
+      }
     }
 
-    const [appointments, past, cancelled, notifications, barbersRes] = await Promise.all([
-      findMy(),
-      findMy(),
-      findMy('cancelled'),
-      // `req` threads the authenticated user through to access control.
+    // The selected tab's page + the next-upcoming appointment for the header.
+    const [appointmentsRes, nextRes, barbersRes, notificationsRes] = await Promise.all([
+      isAppointmentTab
+        ? req.payload.find({
+            collection: 'appointments',
+            depth: 1,
+            where: appointmentWhere(tab as 'upcoming' | 'past' | 'cancelled'),
+            sort: tab === 'past' || tab === 'cancelled' ? '-fromDate' : 'fromDate',
+            limit,
+            page,
+            overrideAccess: false,
+            req,
+          })
+        : Promise.resolve(null),
       req.payload.find({
-        collection: 'notifications',
-        depth: 0,
-        where: { user: { equals: me } },
-        sort: '-createdAt',
-        limit: 20,
-        overrideAccess: false,
-        req,
-      }),
-      // Barbers that accepted this customer: `customers` contains the user id.
-      req.payload.find({
-        collection: 'barbers',
+        collection: 'appointments',
         depth: 1,
-        where: { customers: { contains: me } },
-        sort: '-createdAt',
-        limit: 100,
+        where: appointmentWhere('upcoming'),
+        sort: 'fromDate',
+        limit: 1,
+        pagination: false,
         overrideAccess: false,
         req,
       }),
+      tab === 'barbers'
+        ? req.payload.find({
+            collection: 'barbers',
+            depth: 1,
+            where: { customers: { contains: me } },
+            sort: '-createdAt',
+            limit,
+            page,
+            overrideAccess: false,
+            req,
+          })
+        : Promise.resolve(null),
+      tab === 'notifications'
+        ? req.payload.find({
+            collection: 'notifications',
+            depth: 0,
+            where: { user: { equals: me } },
+            sort: '-createdAt',
+            limit,
+            page,
+            overrideAccess: false,
+            req,
+          })
+        : Promise.resolve(null),
     ])
 
-    // Barber covers/avatars live on the owner's user doc, which customers
-    // cannot populate (users are self-read), so resolve them explicitly.
-    const myBarbers = await Promise.all(
-      barbersRes.docs.map(async (b) => {
-        const ownerId =
-          typeof b.user === 'object' && b.user !== null ? String(b.user.id) : null
-        const owner = ownerId
-          ? await req.payload
-              .findByID({
-                collection: 'users',
-                id: ownerId,
-                depth: 0,
-                overrideAccess: true,
-                req,
-              })
-              .catch(() => null)
-          : null
-        const avatar =
-          owner?.avatar && typeof owner.avatar === 'object' && owner.avatar.url
-            ? owner.avatar.url
-            : null
-        return {
-          id: String(b.id),
-          shopName: b.shopName,
-          rating: b.rating ?? 0,
-          reviewCount: b.reviewCount ?? 0,
-          city: b.city,
-          avatar: avatar ? { url: avatar } : null,
-        }
-      }),
-    )
+    const [upcomingCount, pastCount, cancelledCount, barbersCount, notificationsCount] =
+      await Promise.all([
+        req.payload.count({
+          collection: 'appointments',
+          where: appointmentWhere('upcoming'),
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'appointments',
+          where: appointmentWhere('past'),
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'appointments',
+          where: appointmentWhere('cancelled'),
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'barbers',
+          where: { customers: { contains: me } },
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'notifications',
+          where: { user: { equals: me } },
+          overrideAccess: false,
+          req,
+        }),
+      ])
+
+    const activeTotalDocs = isAppointmentTab
+      ? appointmentsRes?.totalDocs ?? 0
+      : tab === 'barbers'
+        ? barbersRes?.totalDocs ?? 0
+        : notificationsRes?.totalDocs ?? 0
+
+    const myBarbers =
+      tab === 'barbers'
+        ? await resolveCustomerBarbers(req, barbersRes!.docs)
+        : []
 
     return Response.json({
-      nextAppointment: appointments.filter((a) => a.status === 'reserved')[0] ?? null,
-      appointments,
-      pastAppointments: past,
-      cancelledAppointments: cancelled,
-      notifications: notifications.docs,
+      tab,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(activeTotalDocs / limit)),
+      totalDocs: activeTotalDocs,
+      counts: {
+        upcoming: upcomingCount.totalDocs,
+        past: pastCount.totalDocs,
+        cancelled: cancelledCount.totalDocs,
+        barbers: barbersCount.totalDocs,
+        notifications: notificationsCount.totalDocs,
+      },
+      nextAppointment: nextRes.docs[0] ?? null,
+      appointments: isAppointmentTab ? (appointmentsRes?.docs ?? []) : [],
       barbers: myBarbers,
+      notifications: tab === 'notifications' ? (notificationsRes?.docs ?? []) : [],
     })
   },
 }
 
 /**
- * GET /api/barber/dashboard
+ * GET /api/barber/dashboard?tab=all|requests|customers|comments|notifications&page=&limit=&upcomingPage=&upcomingLimit=
  * Aggregated, ready-to-render data (incl. stats) for the barber dashboard.
+ * «Upcoming» appointments and the add-slot form live on the page outside the
+ * tabs, so upcoming is always returned (paginated). Each tab's list is
+ * paginated server-side too.
  */
 export const barberDashboardEndpoint: PayloadEndpoint = {
   path: '/barber/dashboard',
   method: 'get',
   handler: async (req) => {
     dashboardAuth(req, [ROLES.BARBER])
-    const userId = req.user!.id
+    const userId = String(req.user!.id)
     const barberId = await getBarberIdForUser(req.payload, userId)
     if (!barberId) throw new APIError('Barber profile not found', 404)
 
+    const BARBER_TABS = ['all', 'requests', 'customers', 'comments', 'notifications'] as const
+    const tab = readTab(req, 'all', BARBER_TABS)
+    const { page, limit } = paginationParams(req)
+    const upcomingPage = Math.max(
+      1,
+      Number(new URL(req.url || '').searchParams.get('upcomingPage')) || 1,
+    )
+    const upcomingLimit = Math.min(
+      12,
+      Math.max(1, Number(new URL(req.url || '').searchParams.get('upcomingLimit')) || 6),
+    )
+
+    const now = new Date().toISOString()
     const subscriptionState = await getBarberSubscriptionState(req.payload, barberId)
 
-    const [barber, appointmentsRes, comments, notifications, requestsRes] = await Promise.all([
-      req.payload.findByID({
-        collection: 'barbers',
-        id: barberId,
-        depth: 1,
-        overrideAccess: false,
-        req,
-      }),
-      req.payload.find({
-        collection: 'appointments',
-        depth: 1,
-        where: { barber: { equals: barberId } },
-        sort: 'fromDate',
-        limit: 200,
-        overrideAccess: false,
-        req,
-      }),
-      req.payload.find({
-        collection: 'comments',
-        depth: 1,
-        where: { barber: { equals: barberId }, status: { equals: 'active' } },
-        sort: '-createdAt',
-        limit: 20,
-        overrideAccess: false,
-        req,
-      }),
-      req.payload.find({
-        collection: 'notifications',
-        depth: 0,
-        where: { user: { equals: userId } },
-        sort: '-createdAt',
-        limit: 20,
-        overrideAccess: false,
-        req,
-      }),
-      req.payload.find({
-        collection: 'barber-requests',
-        depth: 1,
-        where: { and: [{ barber: { equals: barberId } }, { status: { equals: 'pending' } }] },
-        sort: '-createdAt',
-        limit: 20,
-        overrideAccess: false,
-        req,
-      }),
-    ])
+    // Fetch the barber first — service ids & customer ids come from it.
+    const barber = await req.payload.findByID({
+      collection: 'barbers',
+      id: barberId,
+      depth: 1,
+      overrideAccess: false,
+      req,
+    })
 
-    const allAppointments = appointmentsRes.docs
-
-    // All of this barber's approved customers. `barber.customers` holds user
-    // ids; customers are self-read so the docs are resolved explicitly here.
-    const customers = await Promise.all(
-      (barber?.customers ?? []).map(async (c) => {
-        const customerId =
-          typeof c === 'object' && c !== null ? String(c.id) : String(c)
-        const user = await req.payload
-          .findByID({
-            collection: 'users',
-            id: customerId,
-            depth: 0,
-            overrideAccess: true,
-            req,
-          })
-          .catch(() => null)
-        if (!user) return null
-        return {
-          id: customerId,
-          name: user.name ?? null,
-          username: user.username ?? null,
-          avatar: user.avatar ?? null,
-        }
-      }),
-    ).then((list) => list.filter((c): c is NonNullable<typeof c> => c !== null))
-
-    // The barber's active offered services (used by the «add slot» form).
     const serviceIds = (barber?.services ?? []).map((s) =>
       String(typeof s === 'object' && s !== null ? s.id : s),
     )
-    const servicesRes = serviceIds.length
-      ? await req.payload.find({
-          collection: 'services',
-          depth: 0,
+    const customerIds = (barber?.customers ?? []).map((c) =>
+      String(typeof c === 'object' && c !== null ? c.id : c),
+    )
+
+    const [upcomingRes, allRes, requestsRes, commentsRes, notificationsRes, servicesRes] =
+      await Promise.all([
+        // Upcoming appointments — always shown on the page (paginated).
+        req.payload.find({
+          collection: 'appointments',
+          depth: 1,
           where: {
-            and: [{ id: { in: serviceIds } }, { isActive: { equals: true } }],
+            and: [
+              { barber: { equals: barberId } },
+              { status: { equals: 'reserved' } },
+              { toDate: { greater_than_equal: now } },
+            ],
           },
-          sort: 'name',
-          limit: 100,
+          sort: 'fromDate',
+          limit: upcomingLimit,
+          page: upcomingPage,
           overrideAccess: false,
           req,
-        })
-      : { docs: [] as { id: string; name?: string }[] }
-    const services = servicesRes.docs.map((s) => ({ id: String(s.id), name: s.name ?? '' }))
-
-    return Response.json({
-      barber,
-      appointments: allAppointments,
-      newRequests: allAppointments.filter((a) => a.status === 'reserved'),
-      customers,
-      services,
-      // Customer docs are not population-readable by barbers (users are
-      // self-read), so names are resolved explicitly here.
-      customerRequests: await Promise.all(
-        requestsRes.docs.map(async (r) => {
-          const customerId =
-            typeof r.customer === 'object' ? String(r.customer.id) : String(r.customer)
-          const user = await req.payload
-            .findByID({
-              collection: 'users',
-              id: customerId,
-              depth: 0,
-              overrideAccess: true,
+        }),
+        // 'all' tab: full history (paginated).
+        tab === 'all'
+          ? req.payload.find({
+              collection: 'appointments',
+              depth: 1,
+              where: { barber: { equals: barberId } },
+              sort: '-fromDate',
+              limit,
+              page,
+              overrideAccess: false,
               req,
             })
-            .catch(() => null)
-          return {
-            id: String(r.id),
-            createdAt: r.createdAt,
-            customer: {
-              id: customerId,
-              name: user?.name ?? null,
-              username: user?.username ?? null,
-            },
-          }
+          : Promise.resolve(null),
+        tab === 'requests'
+          ? req.payload.find({
+              collection: 'barber-requests',
+              depth: 1,
+              where: { and: [{ barber: { equals: barberId } }, { status: { equals: 'pending' } }] },
+              sort: '-createdAt',
+              limit,
+              page,
+              overrideAccess: false,
+              req,
+            })
+          : Promise.resolve(null),
+        tab === 'comments'
+          ? req.payload.find({
+              collection: 'comments',
+              depth: 1,
+              where: { barber: { equals: barberId }, status: { equals: 'active' } },
+              sort: '-createdAt',
+              limit,
+              page,
+              overrideAccess: false,
+              req,
+            })
+          : Promise.resolve(null),
+        tab === 'notifications'
+          ? req.payload.find({
+              collection: 'notifications',
+              depth: 0,
+              where: { user: { equals: userId } },
+              sort: '-createdAt',
+              limit,
+              page,
+              overrideAccess: false,
+              req,
+            })
+          : Promise.resolve(null),
+        serviceIds.length > 0
+          ? req.payload.find({
+              collection: 'services',
+              depth: 0,
+              where: {
+                and: [{ id: { in: serviceIds } }, { isActive: { equals: true } }],
+              },
+              sort: 'name',
+              limit: 100,
+              pagination: false,
+              overrideAccess: false,
+              req,
+            })
+          : Promise.resolve({ docs: [] as { id: string; name?: string }[] }),
+      ])
+
+    // Customer names/docs are resolved explicitly (users are self-read).
+    const customers = tab === 'customers' ? await resolveBarberCustomers(req, barberId, page, limit) : []
+
+    const customerRequests =
+      tab === 'requests'
+        ? await Promise.all(
+            requestsRes!.docs.map(async (r) => {
+              const customerId =
+                typeof r.customer === 'object' ? String(r.customer.id) : String(r.customer)
+              const user = await req.payload
+                .findByID({
+                  collection: 'users',
+                  id: customerId,
+                  depth: 0,
+                  overrideAccess: true,
+                  req,
+                })
+                .catch(() => null)
+              return {
+                id: String(r.id),
+                createdAt: r.createdAt,
+                customer: {
+                  id: customerId,
+                  name: user?.name ?? null,
+                  username: user?.username ?? null,
+                },
+              }
+            }),
+          )
+        : []
+
+    const [upcomingCount, allCount, requestsCount, customersCount, commentsCount, notificationsCount, completedCount] =
+      await Promise.all([
+        req.payload.count({
+          collection: 'appointments',
+          where: {
+            and: [
+              { barber: { equals: barberId } },
+              { status: { equals: 'reserved' } },
+              { toDate: { greater_than_equal: now } },
+            ],
+          },
+          overrideAccess: false,
+          req,
         }),
-      ),
-      comments: comments.docs,
-      notifications: notifications.docs,
+        req.payload.count({
+          collection: 'appointments',
+          where: { barber: { equals: barberId } },
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'barber-requests',
+          where: { and: [{ barber: { equals: barberId } }, { status: { equals: 'pending' } }] },
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'users',
+          where: customerIds.length > 0 ? { id: { in: customerIds } } : { id: { equals: '' } },
+          overrideAccess: true,
+          req,
+        }),
+        req.payload.count({
+          collection: 'comments',
+          where: { barber: { equals: barberId }, status: { equals: 'active' } },
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'notifications',
+          where: { user: { equals: userId } },
+          overrideAccess: false,
+          req,
+        }),
+        req.payload.count({
+          collection: 'appointments',
+          where: {
+            and: [
+              { barber: { equals: barberId } },
+              { status: { equals: 'reserved' } },
+              { toDate: { less_than: now } },
+            ],
+          },
+          overrideAccess: false,
+          req,
+        }),
+      ])
+
+    const activeTotalDocs =
+      tab === 'requests'
+        ? requestsRes?.totalDocs ?? 0
+        : tab === 'customers'
+          ? customersCount.totalDocs
+          : tab === 'comments'
+            ? commentsRes?.totalDocs ?? 0
+            : tab === 'notifications'
+              ? notificationsRes?.totalDocs ?? 0
+              : allRes?.totalDocs ?? 0
+
+    return Response.json({
+      tab,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(activeTotalDocs / limit)),
+      totalDocs: activeTotalDocs,
+      counts: {
+        upcoming: upcomingCount.totalDocs,
+        all: allCount.totalDocs,
+        requests: requestsCount.totalDocs,
+        customers: customersCount.totalDocs,
+        comments: commentsCount.totalDocs,
+        notifications: notificationsCount.totalDocs,
+      },
+      upcoming: upcomingRes.docs,
+      upcomingPage,
+      upcomingLimit,
+      upcomingTotalPages: Math.max(1, Math.ceil(upcomingRes.totalDocs / upcomingLimit)),
+      upcomingTotalDocs: upcomingRes.totalDocs,
+      barber,
+      services: servicesRes.docs.map((s) => ({ id: String(s.id), name: s.name ?? '' })),
+      appointments: tab === 'all' ? (allRes?.docs ?? []) : [],
+      customerRequests,
+      customers,
+      comments: tab === 'comments' ? (commentsRes?.docs ?? []) : [],
+      notifications: tab === 'notifications' ? (notificationsRes?.docs ?? []) : [],
       subscription: subscriptionState,
       statistics: {
-        completedCount: allAppointments.filter(
-          (a) => a.status === 'reserved' && a.toDate && new Date(a.toDate).getTime() < Date.now(),
-        ).length,
+        completedCount: completedCount.totalDocs,
         rating: barber?.rating ?? 0,
         reviewCount: barber?.reviewCount ?? 0,
       },
     })
   },
+}
+
+/** Resolves barber avatar/city for a customer's "my barbers" list. */
+async function resolveCustomerBarbers(
+  req: PayloadRequest,
+  barbers: { id: string; shopName: string; rating?: number | null; reviewCount?: number | null; city?: unknown; user?: unknown }[],
+): Promise<unknown[]> {
+  return Promise.all(
+    barbers.map(async (b) => {
+      const ownerId =
+        typeof b.user === 'object' && b.user !== null
+          ? String((b.user as { id: string }).id)
+          : null
+      const owner = ownerId
+        ? await req.payload
+            .findByID({
+              collection: 'users',
+              id: ownerId,
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+            .catch(() => null)
+        : null
+      const avatar =
+        owner?.avatar && typeof owner.avatar === 'object' && (owner.avatar as { url?: string }).url
+          ? (owner.avatar as { url: string }).url
+          : null
+      return {
+        id: String(b.id),
+        shopName: b.shopName,
+        rating: b.rating ?? 0,
+        reviewCount: b.reviewCount ?? 0,
+        city: b.city,
+        avatar: avatar ? { url: avatar } : null,
+      }
+    }),
+  )
+}
+
+/** Resolves a barber's approved customers (paginated) with display names. */
+async function resolveBarberCustomers(
+  req: PayloadRequest,
+  barberId: string,
+  page: number,
+  limit: number,
+): Promise<unknown[]> {
+  const barber = await req.payload.findByID({
+    collection: 'barbers',
+    id: barberId,
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+  const ids = (barber?.customers ?? []).map((c) => String(typeof c === 'object' ? c.id : c))
+  const start = (page - 1) * limit
+  const slice = ids.slice(start, start + limit)
+  const users = await Promise.all(
+    slice.map(async (customerId) => {
+      const user = await req.payload
+        .findByID({
+          collection: 'users',
+          id: customerId,
+          depth: 0,
+          overrideAccess: true,
+          req,
+        })
+        .catch(() => null)
+      if (!user) return null
+      return {
+        id: customerId,
+        name: user.name ?? null,
+        username: user.username ?? null,
+        avatar: user.avatar ?? null,
+      }
+    }),
+  )
+  return users.filter((c): c is NonNullable<typeof c> => c !== null)
 }

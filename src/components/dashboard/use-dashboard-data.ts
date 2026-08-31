@@ -2,10 +2,23 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-export function useDashboardData<T>(url: string) {
+export function useDashboardData<T>(
+  path: string,
+  params: Record<string, string | number> = {},
+) {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const url = (() => {
+    const qs = new URLSearchParams(
+      Object.entries(params).reduce<Record<string, string>>((acc, [k, v]) => {
+        acc[k] = String(v)
+        return acc
+      }, {}),
+    ).toString()
+    return qs ? `${path}?${qs}` : path
+  })()
 
   const load = useCallback(async () => {
     setLoading(true)

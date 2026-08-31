@@ -145,12 +145,22 @@ export const Appointments: CollectionConfig = {
           }
         }
 
+        let customerMessage = ''
+        try {
+          const body = (await req.json?.()) ?? {}
+          customerMessage =
+            body?.message && typeof body.message === 'string' ? body.message.slice(0, 1000) : ''
+        } catch {
+          // Optional field — ignore malformed/empty bodies.
+        }
+
         const updated = await req.payload.update({
           collection: 'appointments',
           id,
           data: {
             customer: req.user.id,
             status: 'reserved',
+            customerMessage,
           },
           // The handler above already validated identity and availability;
           // regular update access intentionally excludes customers.
@@ -289,6 +299,14 @@ export const Appointments: CollectionConfig = {
       label: 'مشتری (رزرو شده)',
       admin: {
         position: 'sidebar',
+      },
+    },
+    {
+      name: 'customerMessage',
+      type: 'textarea',
+      label: 'پیام مشتری',
+      admin: {
+        description: 'پیامی که مشتری هنگام رزرو نوشته است (اختیاری).',
       },
     },
     {

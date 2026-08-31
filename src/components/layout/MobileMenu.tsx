@@ -1,6 +1,6 @@
 'use client'
 
-import { Headphones, Info, LogOut, Menu, UserRound } from 'lucide-react'
+import { LogOut, Menu, UserRound } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -17,10 +17,7 @@ import type { Viewer } from '@/lib/viewer.server'
 import { DEFAULT_NAV_ITEMS, type NavItem } from './nav-items'
 import { ViewerAvatar, displayName, useLogout, viewerMenuItems } from './UserMenu'
 
-const supportItems = [
-  { href: '/support', label: 'پشتیبانی', Icon: Headphones },
-  { href: '/about', label: 'درباره ما', Icon: Info },
-]
+
 
 function AccountSection({ viewer }: { viewer: Viewer }) {
   const { logout, pending } = useLogout()
@@ -126,21 +123,6 @@ export function MobileMenu({
             )}
           </section>
 
-          <Separator />
-
-          <nav aria-label="پشتیبانی">
-            <div className="text-muted-foreground mb-2 px-1 text-xs font-medium">پشتیبانی</div>
-            <ul className="flex flex-col">
-              {supportItems.map(({ href, label, Icon }) => (
-                <li key={href}>
-                  <SheetLink href={href}>
-                    <Icon className="text-muted-foreground size-5" />
-                    {label}
-                  </SheetLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
         </div>
       </SheetContent>
     </Sheet>

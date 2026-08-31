@@ -1,6 +1,9 @@
 import type { CollectionConfig } from 'payload'
-import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
+import {
+  notificationsOverviewEndpoint,
+  notificationsReadAllEndpoint,
+} from '../endpoints/notifications'
 
 export const Notifications: CollectionConfig = {
   slug: 'notifications',
@@ -12,6 +15,7 @@ export const Notifications: CollectionConfig = {
     useAsTitle: 'title',
     group: 'ارتباطات',
   },
+  endpoints: [notificationsOverviewEndpoint, notificationsReadAllEndpoint],
   access: {
     read: ({ req }) => {
       const u = req.user
@@ -74,7 +78,7 @@ export const Notifications: CollectionConfig = {
       type: 'date',
       label: 'زمان مطالعه',
       admin: {
-        position: 'sidebar',
+        hidden:true,
         components: {
           Field: '/components/fields/PersianDateField#PersianDateTimeField',
         },

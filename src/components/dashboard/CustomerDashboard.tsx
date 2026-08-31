@@ -1,12 +1,11 @@
 'use client'
 
 import {
+  BellRing,
   CalendarClock,
   CalendarX2,
   CircleCheck,
-  ClipboardList,
   Clock,
-  LogIn,
   MapPin,
   MessageCircle,
   Scissors,
@@ -18,35 +17,50 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/utils/cn'
-import type { DashAppointment } from '@/lib/dashboard-types'
+import type {
+  CustomerDashboardData,
+  CustomerTab,
+  DashAppointment,
+  DashBarber,
+  DashNotification,
+} from '@/lib/dashboard-types'
 import { faDate, faTime } from '@/lib/dashboard-types'
 
+import { Pager } from './Pager'
 import { useDashboardData } from './use-dashboard-data'
-import type { CustomerDashboardData } from '@/lib/dashboard-types'
-import { useState } from 'react'
 
-type Tab = 'upcoming' | 'past' | 'cancelled'
+const PAGE_SIZE = 6
 
-const TABS: { key: Tab; label: string; icon: typeof CalendarClock }[] = [
+const TABS: { key: CustomerTab; label: string; icon: LucideIcon }[] = [
   { key: 'upcoming', label: 'نوبت‌های پیش‌رو', icon: CalendarClock },
   { key: 'past', label: 'گذشته', icon: CircleCheck },
   { key: 'cancelled', label: 'لغو شده', icon: CalendarX2 },
+  { key: 'barbers', label: 'آرایشگرهای من', icon: UserCheck },
+  { key: 'notifications', label: 'اعلان‌ها', icon: BellRing },
 ]
 
 export function CustomerDashboard({ userName }: { userName?: string }) {
+  const [tab, setTab] = useState<CustomerTab>('upcoming')
+  const [page, setPage] = useState(1)
   const { data, loading, error, reload } = useDashboardData<CustomerDashboardData>(
     '/api/customer/dashboard',
+    { tab, page, limit: PAGE_SIZE },
   )
-  const [tab, setTab] = useState<Tab>('upcoming')
 
-  if (loading) return <DashboardSkeleton />
-  if (error || !data) {
+  const switchTab = (next: string) => {
+    setTab(next as CustomerTab)
+    setPage(1)
+  }
+
+  if (error && !data) {
     return (
       <div className="py-16 text-center">
         <p className="text-muted-foreground text-sm">{error}</p>
@@ -57,10 +71,8 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
     )
   }
 
-  const now = Date.now()
-  const upcoming = data.appointments.filter(
-    (a) => a.status === 'reserved' && new Date(a.toDate).getTime() >= now,
-  )
+  const ready = data?.tab === tab && data.page === page
+  const isLoading = loading || !ready
 
   return (
     <div className="space-y-8">
@@ -96,169 +108,98 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
       </div>
 
       {/* Next appointment */}
-      {data.nextAppointment ? (
+      {ready && data?.nextAppointment ? (
         <NextAppointmentCard appointment={data.nextAppointment} />
       ) : (
-        <Card className="border-dashed py-0">
-          <CardContent className="text-muted-foreground flex flex-col items-center gap-2 px-6 py-10 text-center text-sm">
-            <CalendarClock className="size-8 opacity-50" />
-            نوبت فعالی ندارید؛ از میان آرایشگرها یکی را انتخاب کنید.
-            <Button asChild size="sm" variant="secondary" className="mt-2">
-              <Link href="/barbers">مشاهده آرایشگرها</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        !isLoading && (
+          <Card className="border-dashed py-0">
+            <CardContent className="text-muted-foreground flex flex-col items-center gap-2 px-6 py-10 text-center text-sm">
+              <CalendarClock className="size-8 opacity-50" />
+              نوبت فعالی ندارید؛ از میان آرایشگرها یکی را انتخاب کنید.
+              <Button asChild size="sm" variant="secondary" className="mt-2">
+                <Link href="/barbers">مشاهده آرایشگرها</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )
       )}
 
       {/* Appointments tabs */}
-      <section className="space-y-4">
-        <SectionTitle icon={ClipboardList} title="تاریخچه نوبت‌ها" />
+      <Tabs value={tab} onValueChange={switchTab} className="gap-4">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {TABS.map(({ key, label, icon: Icon }) => {
-            const count =
-              key === 'upcoming'
-                ? upcoming.length
-                : key === 'past'
-                  ? data.pastAppointments.filter((a) => a.status !== 'cancelled').length
-                  : data.cancelledAppointments.length
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setTab(key)}
-                className={cn(
-                  'flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition-colors',
-                  tab === key
-                    ? 'border-primary bg-primary/10 text-primary font-medium'
-                    : 'text-muted-foreground hover:bg-muted',
-                )}
-              >
-                <Icon className="size-4" />
-                {label}
-                <span className="text-xs opacity-70">({count.toLocaleString('fa-IR')})</span>
-              </button>
-            )
-          })}
+          <TabsList className="bg-muted/60 h-auto w-full flex-nowrap justify-start gap-1 rounded-xl p-1">
+            {TABS.map(({ key, label, icon: Icon }) => {
+              const count = data?.counts ? data.counts[key] : 0
+              return (
+                <TabsTrigger
+                  key={key}
+                  value={key}
+                  className="h-9 shrink-0 rounded-lg px-3.5 data-[state=active]:bg-background"
+                >
+                  <Icon className="size-4" />
+                  {label}
+                  {count > 0 && (
+                    <span className="text-xs opacity-70">({count.toLocaleString('fa-IR')})</span>
+                  )}
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
         </div>
 
-        {(() => {
-          const list =
-            tab === 'upcoming'
-              ? upcoming
-              : tab === 'past'
-                ? data.pastAppointments
-                    .filter((a) => a.status !== 'cancelled')
-                    .filter((a) => new Date(a.toDate).getTime() < now)
-                    .reverse()
-                : data.cancelledAppointments
-
-          if (list.length === 0) {
-            return (
-              <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-                موردی برای نمایش نیست.
-              </p>
-            )
-          }
-          return (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {list.map((a) => (
-                <AppointmentCard key={a.id} appointment={a} past={tab === 'past'} />
-              ))}
-            </div>
-          )
-        })()}
-      </section>
-
-      {/* My barbers */}
-      <section className="space-y-4">
-        <SectionTitle
-          icon={UserCheck}
-          title="آرایشگرهای من"
-          extra={
-            (data.barbers?.length ?? 0) > 0
-              ? `${(data.barbers?.length ?? 0).toLocaleString('fa-IR')} آرایشگر`
-              : undefined
-          }
-        />
-        {(data.barbers ?? []).length === 0 ? (
-          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            هنوز به آرایشگری متصل نیستید؛ از میان آرایشگرها درخواست عضویت بدهید.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.barbers!.map((b) => (
-              <Link
-                key={b.id}
-                href={`/barbers/${b.id}`}
-                className="border bg-background hover:bg-accent flex items-center gap-4 rounded-2xl p-4 transition-colors"
-              >
-                <div className="bg-muted relative size-12 shrink-0 overflow-hidden rounded-xl">
-                  {b.avatar?.url ? (
-                    <Image
-                      src={b.avatar.url}
-                      alt={b.avatar.alt || b.shopName}
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <span className="text-muted-foreground flex size-full items-center justify-center text-lg font-bold">
-                      {b.shopName.slice(0, 1)}
-                    </span>
-                  )}
+        {(['upcoming', 'past', 'cancelled'] as CustomerTab[]).map((key) => (
+          <TabsContent key={key} value={key} className="gap-0">
+            {isLoading ? (
+              <ListSkeleton />
+            ) : (data?.appointments.length ?? 0) === 0 ? (
+              <EmptyState text="موردی برای نمایش نیست." />
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {data?.appointments.map((a) => (
+                    <AppointmentCard key={a.id} appointment={a} past={key === 'past'} />
+                  ))}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-semibold">{b.shopName}</h3>
-                  {typeof b.city === 'object' && b.city?.name && (
-                    <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
-                      <MapPin className="size-3" />
-                      {b.city.name}
-                    </span>
-                  )}
-                </div>
-                {b.rating ? (
-                  <div className="flex shrink-0 flex-col items-center">
-                    <span className="flex items-center gap-1 text-sm font-semibold">
-                      <Star className="fill-amber-400 size-4 text-amber-400" />
-                      {b.rating.toLocaleString('fa-IR')}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {(b.reviewCount ?? 0).toLocaleString('fa-IR')} بازخورد
-                    </span>
-                  </div>
-                ) : null}
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+                <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+              </>
+            )}
+          </TabsContent>
+        ))}
 
-      {/* Notifications */}
-      <section className="space-y-4">
-        <SectionTitle icon={LogIn} title="اعلان‌ها" />
-        {data.notifications.length === 0 ? (
-          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            اعلان جدیدی ندارید.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {data.notifications.map((n) => (
-              <Card key={n.id} className="py-0">
-                <CardContent className="px-4 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">{n.title || 'اعلان'}</span>
-                    {!n.readAt && <Badge variant="success">جدید</Badge>}
-                  </div>
-                  {n.body && <p className="text-muted-foreground mt-1 text-sm leading-6">{n.body}</p>}
-                  <span className="text-muted-foreground mt-1 block text-xs">
-                    {faDate(n.createdAt)}
-                  </span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+        <TabsContent value="barbers" className="gap-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : (data?.barbers.length ?? 0) === 0 ? (
+            <EmptyState text="هنوز به آرایشگری متصل نیستید؛ از میان آرایشگرها درخواست عضویت بدهید." />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data?.barbers.map((b) => (
+                  <BarberCard key={b.id} barber={b} />
+                ))}
+              </div>
+              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="notifications" className="gap-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : (data?.notifications.length ?? 0) === 0 ? (
+            <EmptyState text="اعلان جدیدی ندارید." />
+          ) : (
+            <>
+              <div className="space-y-2">
+                {data?.notifications.map((n) => (
+                  <NotificationCard key={n.id} notification={n} />
+                ))}
+              </div>
+              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
@@ -345,9 +286,94 @@ function AppointmentCard({
               )}
             </p>
           )}
+          {appointment.customerMessage && (
+            <p className="bg-muted/60 border-border mt-2 rounded-lg border px-3 py-2 text-xs leading-6">
+              <span className="font-medium">پیام شما:</span> {appointment.customerMessage}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function BarberCard({ barber }: { barber: DashBarber }) {
+  return (
+    <Link
+      href={`/barbers/${barber.id}`}
+      className="border bg-background hover:bg-accent flex items-center gap-4 rounded-2xl p-4 transition-colors"
+    >
+      <div className="bg-muted relative size-12 shrink-0 overflow-hidden rounded-xl">
+        {barber.avatar?.url ? (
+          <Image
+            src={barber.avatar.url}
+            alt={barber.avatar.alt || barber.shopName}
+            fill
+            sizes="48px"
+            className="object-cover"
+          />
+        ) : (
+          <span className="text-muted-foreground flex size-full items-center justify-center text-lg font-bold">
+            {barber.shopName.slice(0, 1)}
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate font-semibold">{barber.shopName}</h3>
+        {typeof barber.city === 'object' && barber.city?.name && (
+          <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+            <MapPin className="size-3" />
+            {barber.city.name}
+          </span>
+        )}
+      </div>
+      {barber.rating ? (
+        <div className="flex shrink-0 flex-col items-center">
+          <span className="flex items-center gap-1 text-sm font-semibold">
+            <Star className="fill-amber-400 size-4 text-amber-400" />
+            {barber.rating.toLocaleString('fa-IR')}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            {(barber.reviewCount ?? 0).toLocaleString('fa-IR')} بازخورد
+          </span>
+        </div>
+      ) : null}
+    </Link>
+  )
+}
+
+function NotificationCard({ notification }: { notification: DashNotification }) {
+  return (
+    <Card className="py-0">
+      <CardContent className="px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">{notification.title || 'اعلان'}</span>
+          {!notification.readAt && <Badge variant="success">جدید</Badge>}
+        </div>
+        {notification.body && (
+          <p className="text-muted-foreground mt-1 text-sm leading-6">{notification.body}</p>
+        )}
+        <span className="text-muted-foreground mt-1 block text-xs">{faDate(notification.createdAt)}</span>
+      </CardContent>
+    </Card>
+  )
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
+      {text}
+    </p>
+  )
+}
+
+function ListSkeleton() {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Skeleton className="h-24 rounded-xl" />
+      <Skeleton className="h-24 rounded-xl" />
+      <Skeleton className="h-24 rounded-xl" />
+    </div>
   )
 }
 

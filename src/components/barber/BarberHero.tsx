@@ -53,7 +53,6 @@ export function BarberHero({ barber }: { barber: BarberProfile }) {
             <div className="flex flex-col shrink-0 items-center gap-1 absolute left-5 top-0">
               <MessageButton barberId={barber.id} />
               <ShareButton shopName={barber.shopName} />
-              <LikeButton />
             </div>
           </div>
           <p className=" text-sm">{barber.barberName}</p>

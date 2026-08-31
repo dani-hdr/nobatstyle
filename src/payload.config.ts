@@ -21,9 +21,11 @@ import { Messages } from './collections/Messages'
 import { Notifications } from './collections/Notifications'
 import { SubscriptionPlans } from './collections/SubscriptionPlans'
 import { Subscriptions } from './collections/Subscriptions'
+import { Pages } from './collections/Pages'
 
 import { Settings } from './globals/Settings'
 import { Home } from './globals/Home'
+import { FooterGlobal } from './globals/Footer'
 
 import {
   settingsPublicEndpoint,
@@ -65,8 +67,9 @@ export default buildConfig({
     Notifications,
     SubscriptionPlans,
     Subscriptions,
+    Pages,
   ],
-  globals: [Settings, Home],
+  globals: [Settings, Home, FooterGlobal],
   i18n: {
     fallbackLanguage: 'en',
     supportedLanguages: { en, fa },

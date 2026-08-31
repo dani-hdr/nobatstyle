@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
-import { ROLES } from '../utils/constants'
 import { isAdmin } from '../access'
+import { ROLES } from '../utils/constants'
 
 export const Messages: CollectionConfig = {
   slug: 'messages',
@@ -73,7 +73,7 @@ export const Messages: CollectionConfig = {
       type: 'date',
       label: 'زمان مطالعه',
       admin: {
-        position: 'sidebar',
+        hidden:true,
         components: {
           Field: '/components/fields/PersianDateField#PersianDateTimeField',
         },

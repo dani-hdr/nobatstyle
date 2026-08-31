@@ -7,6 +7,7 @@ import { isAdmin } from '../access'
  */
 export const Settings: GlobalConfig = {
   slug: 'settings',
+  label:'تنظیمات',
   admin: {
     group: 'تنظیمات',
   },

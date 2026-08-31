@@ -2,12 +2,12 @@
 
 import {
   AlertTriangle,
+  BellRing,
   CalendarClock,
   CalendarPlus,
   CalendarX2,
   Check,
   ClipboardList,
-  Clock,
   Crown,
   ExternalLink,
   Loader2,
@@ -36,24 +36,47 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/utils/cn'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type {
   BarberDashboardData,
+  BarberTab,
   DashAppointment,
   DashService,
   DashSubscriptionState,
+  DashUser,
 } from '@/lib/dashboard-types'
 import { faDate, faTime } from '@/lib/dashboard-types'
+import { cn } from '@/utils/cn'
 
-import { DashboardSkeleton, SectionTitle } from './CustomerDashboard'
+import { DashboardSkeleton } from './CustomerDashboard'
+import { Pager } from './Pager'
 import { useDashboardData } from './use-dashboard-data'
 
+const PAGE_SIZE = 6
+
+const TABS: { key: BarberTab; label: string; icon: typeof CalendarClock; countKey?: keyof BarberDashboardData['counts'] }[] = [
+  { key: 'all', label: 'همه وقت‌ها', icon: ClipboardList, countKey: 'all' },
+  { key: 'requests', label: 'درخواست‌ها', icon: UserPlus, countKey: 'requests' },
+  { key: 'customers', label: 'مشتریان', icon: Users, countKey: 'customers' },
+  { key: 'comments', label: 'دیدگاه‌ها', icon: Star, countKey: 'comments' },
+  { key: 'notifications', label: 'اعلان‌ها', icon: BellRing, countKey: 'notifications' },
+]
+
 export function BarberDashboard({ userName }: { userName?: string }) {
-  const { data, loading, error, reload } = useDashboardData<BarberDashboardData>(
-    '/api/barber/dashboard',
-  )
+  const [tab, setTab] = useState<BarberTab>('all')
+  const [page, setPage] = useState(1)
+  const [upcomingPage, setUpcomingPage] = useState(1)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [decidingRequestId, setDecidingRequestId] = useState<string | null>(null)
+  const { data, loading, error, reload } = useDashboardData<BarberDashboardData>(
+    '/api/barber/dashboard',
+    { tab, page, limit: PAGE_SIZE, upcomingPage },
+  )
+
+  const switchTab = (next: string) => {
+    setTab(next as BarberTab)
+    setPage(1)
+  }
 
   const cancelAppointment = async (id: string) => {
     setCancellingId(id)
@@ -79,8 +102,7 @@ export function BarberDashboard({ userName }: { userName?: string }) {
     }
   }
 
-  if (loading) return <DashboardSkeleton />
-  if (error || !data) {
+  if (error && !data) {
     return (
       <div className="py-16 text-center">
         <p className="text-muted-foreground text-sm">{error}</p>
@@ -91,10 +113,10 @@ export function BarberDashboard({ userName }: { userName?: string }) {
     )
   }
 
-  const now = Date.now()
-  const upcoming = data.appointments.filter(
-    (a) => a.status === 'reserved' && new Date(a.toDate).getTime() >= now,
-  )
+  if (loading && !data) return <DashboardSkeleton />
+
+  const ready = data?.tab === tab && data.page === page && data.upcomingPage === upcomingPage
+  const isLoading = loading || !ready
 
   return (
     <div className="space-y-8">
@@ -102,7 +124,7 @@ export function BarberDashboard({ userName }: { userName?: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight md:text-3xl">
-            {data.barber.shopName}
+            {data?.barber.shopName}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             {userName ? `${userName} عزیز،` : ''} پنل مدیریت آرایشگاه شما
@@ -115,7 +137,7 @@ export function BarberDashboard({ userName }: { userName?: string }) {
               پیام‌ها
             </Link>
           </Button>
-          {data.barber.id && (
+          {data?.barber.id && (
             <Button asChild variant="outline">
               <Link href={`/barbers/${data.barber.id}`}>
                 مشاهده صفحه عمومی
@@ -132,264 +154,296 @@ export function BarberDashboard({ userName }: { userName?: string }) {
       </div>
 
       {/* Subscription status */}
-      <SubscriptionStrip subscription={data.subscription} />
+      {data && <SubscriptionStrip subscription={data.subscription} />}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard
-          icon={Star}
-          value={Number(data.statistics.rating ?? 0).toLocaleString('fa-IR')}
-          label={`امتیاز از ${Number(data.statistics.reviewCount ?? 0).toLocaleString('fa-IR')} بازخورد`}
-          accent
-        />
-        <StatCard
-          icon={CalendarClock}
-          value={upcoming.length.toLocaleString('fa-IR')}
-          label="نوبت‌های پیش‌رو"
-        />
-        <StatCard
-          icon={ClipboardList}
-          value={Number(data.statistics.completedCount ?? 0).toLocaleString('fa-IR')}
-          label="خدمات انجام‌شده"
-        />
-        <StatCard
-          icon={CalendarX2}
-          value={data.appointments
-            .filter((a) => a.status === 'cancelled')
-            .length.toLocaleString('fa-IR')}
-          label="لغو شده"
-        />
-      </div>
+      {data && (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatCard
+            icon={Star}
+            value={Number(data.statistics.rating ?? 0).toLocaleString('fa-IR')}
+            label={`امتیاز از ${Number(data.statistics.reviewCount ?? 0).toLocaleString('fa-IR')} بازخورد`}
+            accent
+          />
+          <StatCard
+            icon={CalendarClock}
+            value={data.counts.upcoming.toLocaleString('fa-IR')}
+            label="نوبت‌های پیش‌رو"
+          />
+          <StatCard
+            icon={ClipboardList}
+            value={data.statistics.completedCount.toLocaleString('fa-IR')}
+            label="خدمات انجام‌شده"
+          />
+          <StatCard
+            icon={CalendarX2}
+            value={data.counts.all.toLocaleString('fa-IR')}
+            label="مجموع وقت‌ها"
+          />
+        </div>
+      )}
 
-      {/* Incoming customer requests */}
+      {/* Upcoming appointments — always on the page, outside the tabs */}
       <section className="space-y-4">
-        <SectionTitle icon={UserPlus} title="درخواست‌های مشتریان" />
-        {(data.customerRequests ?? []).length === 0 ? (
-          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            درخواست جدیدی وجود ندارد.
-          </p>
+        <h2 className="flex items-center gap-2 text-lg font-bold">
+          <span className="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg">
+            <CalendarClock className="size-4.5" />
+          </span>
+          نوبت‌های پیش‌رو
+          {data && data.counts.upcoming > 0 && (
+            <span className="text-muted-foreground text-xs font-normal">
+              {data.counts.upcoming.toLocaleString('fa-IR')} نوبت
+            </span>
+          )}
+        </h2>
+        {isLoading ? (
+          <ListSkeleton />
+        ) : (data?.upcoming.length ?? 0) === 0 ? (
+          <EmptyState text="نوبت رزروشده‌ای در پیش ندارید." />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(data.customerRequests ?? []).map((r) => {
-              const busy = decidingRequestId === r.id
-              const name = r.customer.name || r.customer.username || 'کاربر'
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {data?.upcoming.map((a) => (
+                <BarberAppointmentCard
+                  key={a.id}
+                  appointment={a}
+                  onCancel={() => void cancelAppointment(a.id)}
+                  cancelling={cancellingId === a.id}
+                />
+              ))}
+            </div>
+            <Pager
+              page={upcomingPage}
+              totalPages={data?.upcomingTotalPages ?? 1}
+              onPageChange={setUpcomingPage}
+            />
+          </>
+        )}
+      </section>
+
+      {/* Add slot — always on the page, outside the tabs */}
+      <section className="space-y-4">
+        <h2 className="flex items-center gap-2 text-lg font-bold">
+          <span className="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg">
+            <CalendarPlus className="size-4.5" />
+          </span>
+          افزودن نوبت
+        </h2>
+        <AddSlotForm services={data?.services ?? []} onAdded={reload} />
+      </section>
+
+      {/* Tabs */}
+      <Tabs value={tab} onValueChange={switchTab} className="gap-4">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <TabsList className="bg-muted/60 h-auto w-full flex-nowrap justify-start gap-1 rounded-xl p-1">
+            {TABS.map(({ key, label, icon: Icon, countKey }) => {
+              const count = data && countKey ? data.counts[countKey] : 0
               return (
-                <Card key={r.id} className="py-0">
-                  <CardContent className="px-4 py-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="flex items-center gap-1.5 font-semibold">
-                        <UserRound className="text-primary size-4" />
-                        {name}
-                      </h3>
-                      <Badge variant="secondary">در انتظار تایید</Badge>
-                    </div>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      درخواست عضویت — {faDate(r.createdAt)}
-                    </p>
-                    <div className="mt-3 flex gap-2">
-                      <Button
-                        size="sm"
-                        className="flex-1"
-                        disabled={busy}
-                        onClick={() => void decideRequest(r.id, 'approve')}
-                      >
-                        {busy ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Check className="size-4" />
-                        )}
-                        تایید
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-destructive flex-1"
-                        disabled={busy}
-                        onClick={() => void decideRequest(r.id, 'reject')}
-                      >
-                        <X className="size-4" />
-                        رد
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <TabsTrigger
+                  key={key}
+                  value={key}
+                  className="h-9 shrink-0 rounded-lg px-3.5 data-[state=active]:bg-background"
+                >
+                  <Icon className="size-4" />
+                  {label}
+                  {count > 0 && (
+                    <span className="text-xs opacity-70">({count.toLocaleString('fa-IR')})</span>
+                  )}
+                </TabsTrigger>
               )
             })}
-          </div>
-        )}
-      </section>
+          </TabsList>
+        </div>
 
-      {/* Customers */}
-      <section className="space-y-4">
-        <SectionTitle
-          icon={Users}
-          title="مشتریان من"
-          extra={
-            (data.customers?.length ?? 0) > 0
-              ? `${(data.customers?.length ?? 0).toLocaleString('fa-IR')} مشتری`
-              : undefined
-          }
-        />
-        {(data.customers ?? []).length === 0 ? (
-          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            هنوز مشتری ندارید؛ درخواست‌های مشتریان را از بالا تایید کنید.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.customers!.map((c) => (
-              <Card key={c.id} className="py-0">
-                <CardContent className="flex items-center gap-3 px-4 py-4">
-                  <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold">
-                    {(c.name || c.username || 'ک').slice(0, 1)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{c.name || 'کاربر'}</p>
-                    {c.username && (
-                      <p className="text-muted-foreground truncate text-xs">{c.username}</p>
-                    )}
-                  </div>
+        <TabsContent value="all" className="gap-0">
+          {isLoading ? (
+            <TableSkeleton />
+          ) : (data?.appointments.length ?? 0) === 0 ? (
+            <EmptyState text="هنوز وقتی تعریف نشده است." />
+          ) : (
+            <>
+              <Card className="overflow-x-auto py-0">
+                <CardContent className="px-0 py-0">
+                  <table className="w-full min-w-[520px] text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground border-b text-xs">
+                        <th className="px-4 py-3 text-start font-medium">خدمت</th>
+                        <th className="px-4 py-3 text-start font-medium">مشتری</th>
+                        <th className="px-4 py-3 text-start font-medium">زمان</th>
+                        <th className="px-4 py-3 text-start font-medium">پیام مشتری</th>
+                        <th className="px-4 py-3 text-start font-medium">وضعیت</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data?.appointments.map((a) => {
+                        const service = typeof a.service === 'object' ? a.service : null
+                        const customer = typeof a.customer === 'object' ? a.customer : null
+                        return (
+                          <tr key={a.id} className="border-b last:border-b-0">
+                            <td className="px-4 py-2.5">{service?.name ?? '—'}</td>
+                            <td className="text-muted-foreground px-4 py-2.5">
+                              {customer && typeof customer === 'object'
+                                ? customer.name || customer.username || 'مشتری'
+                                : '—'}
+                            </td>
+                            <td className="text-muted-foreground px-4 py-2.5">
+                              {faDate(a.fromDate)}، {faTime(a.fromDate)}
+                            </td>
+                            <td className="text-muted-foreground max-w-[180px] px-4 py-2.5">
+                              {a.customerMessage ? (
+                                <span className="line-clamp-2" title={a.customerMessage}>
+                                  {a.customerMessage}
+                                </span>
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <StatusBadge status={a.status} past={new Date(a.toDate).getTime() < Date.now()} />
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
-      </section>
+              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+            </>
+          )}
+        </TabsContent>
 
-      {/* Add appointment slot */}
-      <section className="space-y-4">
-        <SectionTitle icon={CalendarPlus} title="افزودن نوبت" />
-        <AddSlotForm services={data.services} onAdded={reload} />
-      </section>
-
-      {/* Incoming appointments */}
-      <section className="space-y-4">
-        <SectionTitle icon={CalendarClock} title="نوبت‌های پیش‌رو" />
-        {upcoming.length === 0 ? (
-          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            نوبت رزروشده‌ای در پیش ندارید.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {upcoming.map((a) => (
-              <BarberAppointmentCard
-                key={a.id}
-                appointment={a}
-                onCancel={() => void cancelAppointment(a.id)}
-                cancelling={cancellingId === a.id}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* All history (compact) */}
-      <section className="space-y-4">
-        <SectionTitle icon={ClipboardList} title="همه وقت‌ها" />
-        <Card className="overflow-x-auto py-0">
-          <CardContent className="px-0 py-0">
-            <table className="w-full min-w-[480px] text-sm">
-              <thead>
-                <tr className="text-muted-foreground border-b text-xs">
-                  <th className="px-4 py-3 text-start font-medium">خدمت</th>
-                  <th className="px-4 py-3 text-start font-medium">مشتری</th>
-                  <th className="px-4 py-3 text-start font-medium">زمان</th>
-                  <th className="px-4 py-3 text-start font-medium">وضعیت</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.appointments.slice(0, 20).map((a) => {
-                  const service = typeof a.service === 'object' ? a.service : null
-                  const customer = typeof a.customer === 'object' ? a.customer : null
+        <TabsContent value="requests" className="gap-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : (data?.customerRequests.length ?? 0) === 0 ? (
+            <EmptyState text="درخواست جدیدی وجود ندارد." />
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {data?.customerRequests.map((r) => {
+                  const busy = decidingRequestId === r.id
+                  const name = r.customer.name || r.customer.username || 'کاربر'
                   return (
-                    <tr key={a.id} className="border-b last:border-b-0">
-                      <td className="px-4 py-2.5">{service?.name ?? '—'}</td>
-                      <td className="text-muted-foreground px-4 py-2.5">
-                        {customer && typeof customer === 'object'
-                          ? customer.name || customer.username || 'مشتری'
-                          : '—'}
-                      </td>
-                      <td className="text-muted-foreground px-4 py-2.5">
-                        {faDate(a.fromDate)}، {faTime(a.fromDate)}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <StatusBadge status={a.status} past={new Date(a.toDate).getTime() < now} />
-                      </td>
-                    </tr>
+                    <Card key={r.id} className="py-0">
+                      <CardContent className="px-4 py-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="flex items-center gap-1.5 font-semibold">
+                            <UserRound className="text-primary size-4" />
+                            {name}
+                          </h3>
+                          <Badge variant="secondary">در انتظار تایید</Badge>
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          درخواست عضویت — {faDate(r.createdAt)}
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            disabled={busy}
+                            onClick={() => void decideRequest(r.id, 'approve')}
+                          >
+                            {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+                            تایید
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive flex-1"
+                            disabled={busy}
+                            onClick={() => void decideRequest(r.id, 'reject')}
+                          >
+                            <X className="size-4" />
+                            رد
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   )
                 })}
-                {data.appointments.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="text-muted-foreground px-4 py-6 text-center">
-                      هنوز وقتی تعریف نشده است.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      </section>
+              </div>
+              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+            </>
+          )}
+        </TabsContent>
 
-      {/* Latest comments */}
-      <section className="space-y-4">
-        <SectionTitle icon={Star} title="آخرین دیدگاه‌ها" />
-        {data.comments.length === 0 ? (
-          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            هنوز دیدگاهی ثبت نشده است.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {data.comments.slice(0, 6).map((c) => {
-              const author = typeof c.author === 'object' ? c.author : null
-              return (
-                <Card key={c.id} className="py-0">
-                  <CardContent className="px-4 py-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold">{author?.name || 'کاربر'}</span>
-                      {typeof c.rating === 'number' && (
-                        <span className="flex items-center gap-1 text-sm font-bold">
-                          <Star className="size-4 fill-amber-400 text-amber-400" />
-                          {c.rating.toLocaleString('fa-IR')}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-muted-foreground mt-1.5 text-sm leading-6">{c.content}</p>
-                    <span className="text-muted-foreground mt-1 block text-xs">
-                      {faDate(c.createdAt)}
-                    </span>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-      </section>
+        <TabsContent value="customers" className="gap-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : (data?.customers.length ?? 0) === 0 ? (
+            <EmptyState text="هنوز مشتری ندارید؛ درخواست‌های مشتریان را از تب «درخواست‌ها» تایید کنید." />
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data?.customers.map((c) => (
+                  <CustomerCard key={c.id} customer={c} />
+                ))}
+              </div>
+              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+            </>
+          )}
+        </TabsContent>
 
-      {/* Notifications */}
-      <section className="space-y-4">
-        <SectionTitle icon={UserRound} title="اعلان‌ها" />
-        {data.notifications.length === 0 ? (
-          <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
-            اعلان جدیدی ندارید.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {data.notifications.map((n) => (
-              <Card key={n.id} className="py-0">
-                <CardContent className="px-4 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">{n.title || 'اعلان'}</span>
-                    {!n.readAt && <Badge variant="success">جدید</Badge>}
-                  </div>
-                  {n.body && (
-                    <p className="text-muted-foreground mt-1 text-sm leading-6">{n.body}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+        <TabsContent value="comments" className="gap-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : (data?.comments.length ?? 0) === 0 ? (
+            <EmptyState text="هنوز دیدگاهی ثبت نشده است." />
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {data?.comments.map((c) => {
+                  const author = typeof c.author === 'object' ? c.author : null
+                  return (
+                    <Card key={c.id} className="py-0">
+                      <CardContent className="px-4 py-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold">{author?.name || 'کاربر'}</span>
+                          {typeof c.rating === 'number' && (
+                            <span className="flex items-center gap-1 text-sm font-bold">
+                              <Star className="size-4 fill-amber-400 text-amber-400" />
+                              {c.rating.toLocaleString('fa-IR')}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground mt-1.5 text-sm leading-6">{c.content}</p>
+                        <span className="text-muted-foreground mt-1 block text-xs">{faDate(c.createdAt)}</span>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="notifications" className="gap-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : (data?.notifications.length ?? 0) === 0 ? (
+            <EmptyState text="اعلان جدیدی ندارید." />
+          ) : (
+            <>
+              <div className="space-y-2">
+                {data?.notifications.map((n) => (
+                  <Card key={n.id} className="py-0">
+                    <CardContent className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">{n.title || 'اعلان'}</span>
+                        {!n.readAt && <Badge variant="success">جدید</Badge>}
+                      </div>
+                      {n.body && <p className="text-muted-foreground mt-1 text-sm leading-6">{n.body}</p>}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
@@ -586,6 +640,11 @@ function BarberAppointmentCard({
             <UserRound className="size-3.5" />
             {customer?.name || customer?.username || 'بدون نام'}
           </p>
+          {appointment.customerMessage && (
+            <p className="bg-muted/60 border-border mt-2 rounded-lg border px-3 py-2 text-xs leading-6">
+              <span className="font-medium">پیام مشتری:</span> {appointment.customerMessage}
+            </p>
+          )}
         </div>
         <Button
           variant="outline"
@@ -597,6 +656,22 @@ function BarberAppointmentCard({
           <CalendarX2 className="size-4" />
           لغو نوبت
         </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CustomerCard({ customer }: { customer: DashUser }) {
+  return (
+    <Card className="py-0">
+      <CardContent className="flex items-center gap-3 px-4 py-4">
+        <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold">
+          {(customer.name || customer.username || 'ک').slice(0, 1)}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate font-semibold">{customer.name || 'کاربر'}</p>
+          {customer.username && <p className="text-muted-foreground truncate text-xs">{customer.username}</p>}
+        </div>
       </CardContent>
     </Card>
   )
@@ -658,4 +733,26 @@ function SubscriptionStrip({ subscription }: { subscription: DashSubscriptionSta
       )}
     </div>
   )
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <p className="text-muted-foreground border-border rounded-xl border border-dashed p-8 text-center text-sm">
+      {text}
+    </p>
+  )
+}
+
+function ListSkeleton() {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Skeleton className="h-24 rounded-xl" />
+      <Skeleton className="h-24 rounded-xl" />
+      <Skeleton className="h-24 rounded-xl" />
+    </div>
+  )
+}
+
+function TableSkeleton() {
+  return <Skeleton className="h-40 w-full rounded-xl" />
 }

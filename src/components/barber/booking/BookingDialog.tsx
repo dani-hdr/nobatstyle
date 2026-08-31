@@ -207,6 +207,8 @@ export function BookingDialog({
     try {
       const res = await fetch(`/api/appointments/${selectedAppointmentId}/reserve`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: notes.trim() }),
       })
       if (res.status === 401) {
         setConfirmError('برای رزرو ابتدا باید وارد حساب کاربری شوید.')

@@ -1,32 +1,20 @@
-import { AtSign, Camera, Globe, Send } from 'lucide-react'
+import { AtSign, Camera, Globe, MessageCircle, Send, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 
+import type { FooterColumn, FooterContent, FooterSocial } from '@/lib/site'
+import { DEFAULT_FOOTER } from '@/lib/site'
+
 import { Container } from './Container'
-import type { NavItem } from './nav-items'
-import { DEFAULT_NAV_ITEMS } from './nav-items'
 
-const fallbackQuickLinks: NavItem[] = DEFAULT_NAV_ITEMS
+const SOCIAL_ICONS: Record<FooterSocial['icon'], LucideIcon> = {
+  instagram: Camera,
+  telegram: Send,
+  twitter: AtSign,
+  youtube: Globe,
+  whatsapp: MessageCircle,
+}
 
-const supportLinks = [
-  { href: '/faq', label: 'سوالات متداول' },
-  { href: '/contact', label: 'تماس با ما' },
-  { href: '/rules', label: 'قوانین' },
-  { href: '/privacy', label: 'حریم خصوصی' },
-]
-
-const professionalLinks = [
-  { href: '/barber-register', label: 'ثبت‌نام آرایشگر' },
-  { href: '/barber-login', label: 'ورود آرایشگر' },
-]
-
-const socialLinks = [
-  { href: '/', label: 'اینستاگرام', Icon: Camera },
-  { href: '/', label: 'توییتر', Icon: Send },
-  { href: '/', label: 'یوتیوب', Icon: Globe },
-  { href: '/', label: 'تلگرام', Icon: AtSign },
-]
-
-function LinkColumn({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+function LinkColumn({ title, links }: FooterColumn) {
   return (
     <div>
       <h3 className="mb-4 text-sm font-semibold">{title}</h3>
@@ -48,53 +36,53 @@ function LinkColumn({ title, links }: { title: string; links: { href: string; la
 
 export function Footer({
   siteName = 'نوبت استایل',
-  quickLinks = fallbackQuickLinks,
+  content = DEFAULT_FOOTER,
 }: {
   siteName?: string
-  quickLinks?: NavItem[]
+  content?: FooterContent
 }) {
+  const { aboutText, columns, socialLinks, copyright } = content
+
   return (
     <footer className="mt-auto border-t">
-      <Container className="pt-14 pb-20  md:pb-8">
-        <div className="grid grid-cols-2 gap-10  lg:grid-cols-12">
+      <Container className="pt-14 pb-20 md:pb-8">
+        <div className="grid grid-cols-2 gap-10 lg:grid-cols-12">
           <div className="col-span-full lg:col-span-4 lg:ps-1">
             <p className="text-lg font-bold">{siteName}</p>
-            <p className="text-muted-foreground mt-3 max-w-xs text-sm leading-6">
-              آرایشگر مورد علاقت رو پیدا کن و به‌سادگی نوبت بگیر.
-            </p>
+            {aboutText && (
+              <p className="text-muted-foreground mt-3 max-w-xs text-sm leading-6">{aboutText}</p>
+            )}
           </div>
 
-          <div className=" lg:col-span-2">
-            <LinkColumn title="دسترسی سریع" links={quickLinks} />
-          </div>
-
-          <div className=" lg:col-span-2">
-            <LinkColumn title="پشتیبانی" links={supportLinks} />
-          </div>
-
-          <div className=" lg:col-span-2">
-            <LinkColumn title="برای آرایشگران" links={professionalLinks} />
-          </div>
+          {columns.slice(0, 3).map((column) => (
+            <div className="lg:col-span-2" key={column.id ?? column.title}>
+              <LinkColumn title={column.title} links={column.links} />
+            </div>
+          ))}
         </div>
 
         <div className="border-t mt-12 flex flex-col items-center justify-between gap-4 border-border pt-6 sm:flex-row">
           <p className="text-muted-foreground text-sm" dir="rtl">
-            © ۱۴۰۵ نوبت استایل
+            {copyright ?? `© ۱۴۰۵ ${siteName}`}
           </p>
-          <ul className="flex items-center gap-1">
-            {socialLinks.map(({ href, label, Icon }) => (
-              <li key={label}>
-                <a
-                  href={href}
-                  aria-label={label}
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-9 items-center justify-center rounded-full transition-colors"
-                >
-                  <Icon className="size-4" />
-                </a>
-              </li>
-            ))}
-          </ul>
-         
+          {socialLinks.length > 0 && (
+            <ul className="flex items-center gap-1">
+              {socialLinks.map(({ href, label, icon }) => {
+                const Icon = SOCIAL_ICONS[icon] ?? Globe
+                return (
+                  <li key={`${icon}-${href}`}>
+                    <a
+                      href={href}
+                      aria-label={label || icon}
+                      className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-9 items-center justify-center rounded-full transition-colors"
+                    >
+                      <Icon className="size-4" />
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       </Container>
     </footer>

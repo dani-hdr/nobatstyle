@@ -1,10 +1,10 @@
 'use client'
 
 import { CalendarCheck, Check, ChevronLeft, ChevronRight, Clock, Scissors } from 'lucide-react'
-import * as React from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import * as React from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -34,6 +34,21 @@ type BookingDialogProps = {
   initialServiceId?: string
 }
 
+type DaySlot = {
+  id: string
+  service: string | { id?: string } | null
+  fromDate: string
+  available: boolean
+}
+
+function slotServiceId(a: DaySlot): string {
+  return typeof a.service === 'object' && a.service !== null
+    ? String(a.service.id ?? '')
+    : a.service != null
+      ? String(a.service)
+      : ''
+}
+
 const STEP_LABELS = ['تاریخ', 'خدمات', 'ساعت', 'تایید']
 
 export function BookingDialog({
@@ -53,6 +68,13 @@ export function BookingDialog({
   const [selectedTime, setSelectedTime] = useState<string>()
   const [notes, setNotes] = useState('')
 
+  // Available windows of the currently selected date (single source of truth
+  // for both the service step and the time step).
+  const [daySlots, setDaySlots] = useState<DaySlot[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [slotsError, setSlotsError] = useState<string | null>(null)
+  const [slotsReload, setSlotsReload] = useState(0)
+
   const availableDays = useMemo(() => buildAvailableDays(barber.availabilityDays), [barber.availabilityDays])
   const bookableKeys = useMemo(
     () => new Set(availableDays.filter((d) => d.available).map((d) => d.key)),
@@ -63,6 +85,37 @@ export function BookingDialog({
     [barber.services, selectedServiceId],
   )
   const selectedDateMeta = availableDays.find((d) => d.key === selectedDateKey)
+
+  // Only the services that actually have an available window on the chosen day.
+  const availableServiceIds = useMemo(() => {
+    const set = new Set<string>()
+    for (const a of daySlots) {
+      if (!a.available) continue
+      const sid = slotServiceId(a)
+      if (sid) set.add(sid)
+    }
+    return set
+  }, [daySlots])
+  const bookableServices = useMemo(
+    () => barber.services.filter((s) => availableServiceIds.has(s.id)),
+    [barber.services, availableServiceIds],
+  )
+  // Time options for the chosen service on the chosen day.
+  const timeOptions = useMemo(() => {
+    if (!selectedServiceId) return []
+    const seen = new Set<string>()
+    const opts: { appointmentId: string; time: string }[] = []
+    for (const a of daySlots) {
+      if (!a.available) continue
+      if (slotServiceId(a) !== selectedServiceId) continue
+      const d = new Date(a.fromDate)
+      const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      if (seen.has(time)) continue
+      seen.add(time)
+      opts.push({ time, appointmentId: String(a.id) })
+    }
+    return opts.sort((x, y) => x.time.localeCompare(y.time))
+  }, [daySlots, selectedServiceId])
 
   // Reset whenever the dialog opens
   useEffect(() => {
@@ -79,22 +132,59 @@ export function BookingDialog({
     }
   }, [open, availableDays, initialServiceId])
 
-  const selectDay = useCallback((key: string, dayAvailable: boolean) => {
-    if (!dayAvailable) return
-    setSelectedDateKey(key)
-    setSelectedAppointmentId(undefined)
-    setSelectedTime(undefined)
-  }, [])
+  // Load the day's available windows (used to filter services and list times).
+  useEffect(() => {
+    if (!selectedDateKey) {
+      setDaySlots([])
+      return
+    }
+    let cancelled = false
+    async function load() {
+      setSlotsLoading(true)
+      setSlotsError(null)
+      try {
+        const date = jalaliKeyToISODate(selectedDateKey!)
+        const res = await fetch(`/api/barbers/${barber.id}/appointments?date=${date}`)
+        if (!res.ok) throw new Error('failed')
+        const data = (await res.json()) as { appointments?: DaySlot[] }
+        if (!cancelled) setDaySlots(data.appointments ?? [])
+      } catch {
+        if (!cancelled) {
+          setSlotsError('خطا در دریافت ساعات خالی.')
+          setDaySlots([])
+        }
+      } finally {
+        if (!cancelled) setSlotsLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedDateKey, slotsReload, barber.id])
+
+  const selectDay = useCallback(
+    (key: string, dayAvailable: boolean) => {
+      if (!dayAvailable) return
+      setSelectedDateKey(key)
+      setSelectedServiceId(undefined)
+      setSelectedAppointmentId(undefined)
+      setSelectedTime(undefined)
+    },
+    [],
+  )
 
   const selectSlot = useCallback((appointmentId: string, time: string) => {
     setSelectedAppointmentId(appointmentId)
     setSelectedTime(time)
   }, [])
 
+  const selected = Boolean(selectedDateKey) && Boolean(selectedServiceId) && Boolean(selectedAppointmentId)
   const nextEnabled =
     (step === 0 && Boolean(selectedDateKey)) ||
     (step === 1 && Boolean(selectedServiceId)) ||
-    (step === 2 && Boolean(selectedDateKey) && Boolean(selectedAppointmentId))
+    (step === 2 && selected) ||
+    (step === 3 && selected)
 
   const handleNext = () => {
     if (step === 3) return
@@ -133,7 +223,7 @@ export function BookingDialog({
         const data = await res.json().catch(() => ({}))
         setConfirmError(
           (data as { errors?: { message?: string }[] })?.errors?.[0]?.message ??
-            'خطا در ثبت رزرو. دوباره تلاش کنید.',
+          'خطا در ثبت رزرو. دوباره تلاش کنید.',
         )
         return
       }
@@ -163,90 +253,95 @@ export function BookingDialog({
         </DialogDescription>
       </DialogHeader>
 
-        {success ? (
-          <SuccessView
-            barber={barber}
-            serviceName={selectedService?.name}
-            dateLabel={selectedDateMeta ? formatJalaliShort(selectedDateMeta.date) : undefined}
-            time={selectedTime}
-            onNearbyClose={() => onOpenChange(false)}
-          />
-        ) : (
-          <>
-            <Stepper current={step} />
+      {success ? (
+        <SuccessView
+          barber={barber}
+          serviceName={selectedService?.name}
+          dateLabel={selectedDateMeta ? formatJalaliShort(selectedDateMeta.date) : undefined}
+          time={selectedTime}
+          onNearbyClose={() => onOpenChange(false)}
+        />
+      ) : (
+        <>
+          <Stepper current={step} />
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-5">
-              {step === 0 && (
-                <DateStep
-                  availableDays={availableDays}
-                  selectedDateKey={selectedDateKey}
-                  onSelect={selectDay}
-                  bookableKeys={bookableKeys}
-                />
-              )}
-              {step === 1 && (
-                <ServiceStep
-                  services={barber.services}
-                  selectedId={selectedServiceId}
-                  onSelect={(id) => {
-                    setSelectedServiceId(id)
-                    setSelectedAppointmentId(undefined)
-                    setSelectedTime(undefined)
-                  }}
-                />
-              )}
-              {step === 2 && (
-                <TimeStep
-                  barberId={barber.id}
-                  selectedDateKey={selectedDateKey}
-                  selectedServiceId={selectedServiceId}
-                  selectedAppointmentId={selectedAppointmentId}
-                  onSelectSlot={selectSlot}
-                />
-              )}
-              {step === 3 && (
-                <ReviewStep
-                  barber={barber}
-                  service={selectedService}
-                  dateKey={selectedDateKey}
-                  dateMeta={selectedDateMeta}
-                  time={selectedTime}
-                  notes={notes}
-                  setNotes={setNotes}
-                />
-              )}
-            </div>
-
-            {confirmError && step === 3 && (
-              <p className="text-destructive px-5 text-xs">{confirmError}</p>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            {step === 0 && (
+              <DateStep
+                availableDays={availableDays}
+                selectedDateKey={selectedDateKey}
+                onSelect={selectDay}
+                bookableKeys={bookableKeys}
+              />
             )}
+            {step === 1 && (
+              <ServiceStep
+                services={bookableServices}
+                loading={slotsLoading}
+                error={slotsError}
+                onRetry={() => setSlotsReload((k) => k + 1)}
+                selectedId={selectedServiceId}
+                onSelect={(id) => {
+                  setSelectedServiceId(id)
+                  setSelectedAppointmentId(undefined)
+                  setSelectedTime(undefined)
+                }}
+              />
+            )}
+            {step === 2 && (
+              <TimeStep
+                dateKey={selectedDateKey}
+                loading={slotsLoading}
+                error={slotsError}
+                onRetry={() => setSlotsReload((k) => k + 1)}
+                slots={timeOptions}
+                selectedAppointmentId={selectedAppointmentId}
+                onSelectSlot={selectSlot}
+              />
+            )}
+            {step === 3 && (
+              <ReviewStep
+                barber={barber}
+                service={selectedService}
+                dateKey={selectedDateKey}
+                dateMeta={selectedDateMeta}
+                time={selectedTime}
+                notes={notes}
+                setNotes={setNotes}
+              />
+            )}
+          </div>
 
-            <div className="border-t p-4">
-              <div className="flex items-center justify-between gap-2">
-                <Button variant="ghost" onClick={handleBack} disabled={confirming}>
-                  <ChevronRight className="size-4" />
-                  {step === 0 ? 'انصراف' : 'قبلی'}
+          {confirmError && step === 3 && (
+            <p className="text-destructive px-5 text-xs">{confirmError}</p>
+          )}
+
+          <div className="border-t p-4">
+            <div className="flex items-center justify-between gap-2">
+              <Button variant="ghost" onClick={handleBack} disabled={confirming}>
+                <ChevronRight className="size-4" />
+                {step === 0 ? 'انصراف' : 'قبلی'}
+              </Button>
+
+              {step < 3 ? (
+                <Button onClick={handleNext} disabled={!nextEnabled} className="px-6">
+                  بعدی
+                  <ChevronLeft className="size-4" />
                 </Button>
-
-                {step < 3 ? (
-                  <Button onClick={handleNext} disabled={!nextEnabled} className="px-6">
-                    بعدی
-                    <ChevronLeft className="size-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={confirmBooking}
-                    disabled={!nextEnabled || confirming}
-                    className="px-6"
-                  >
-                    <CalendarCheck className="size-4" />
-                    {confirming ? 'در حال ثبت…' : 'تایید رزرو'}
-                  </Button>
-                )}
-              </div>
+              ) : (
+                <Button
+                  onClick={confirmBooking}
+                  disabled={!nextEnabled || confirming}
+                  className="px-6"
+                >
+                  <CalendarCheck className="size-4" />
+                  {confirming ? 'در حال ثبت…' : 'تایید رزرو'}
+                </Button>
+              )}
             </div>
-          </>
-        )}
+          </div>
+        </>
+      )}
     </ResponsiveModal>
   )
 }
@@ -329,8 +424,8 @@ function DateStep({
                 'rounded-lg border py-2 text-center text-xs transition-colors',
                 !day.available && 'text-muted-foreground/50 cursor-not-allowed line-through',
                 day.available &&
-                  selectedDateKey !== day.key &&
-                  'hover:bg-muted cursor-pointer',
+                selectedDateKey !== day.key &&
+                'hover:bg-muted cursor-pointer',
                 day.available && selectedDateKey === day.key && 'bg-primary text-primary-foreground border-primary',
               )}
             >
@@ -366,10 +461,16 @@ function Legend() {
 
 function ServiceStep({
   services,
+  loading,
+  error,
+  onRetry,
   selectedId,
   onSelect,
 }: {
   services: BarberService[]
+  loading?: boolean
+  error?: string | null
+  onRetry?: () => void
   selectedId?: string
   onSelect: (id: string) => void
 }) {
@@ -377,60 +478,82 @@ function ServiceStep({
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold">انتخاب خدمات</h3>
-        <p className="text-muted-foreground text-xs">خدمات مورد نظر خود را انتخاب کنید</p>
+        <p className="text-muted-foreground text-xs">
+          فقط خدماتی نمایش داده می‌شود که برای این روز وقت آزاد دارند
+        </p>
       </div>
-      <div className="space-y-2">
-        {services.map((service) => {
-          const selected = service.id === selectedId
-          return (
-            <button
-              key={service.id}
-              type="button"
-              onClick={() => onSelect(service.id)}
-              className={cn(
-                'flex w-full items-center gap-3 rounded-lg border p-3 text-start transition-colors',
-                selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted',
-              )}
-            >
-              {service.image?.url && (
-                <div className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg border">
-                  <Image
-                    src={service.image.url}
-                    alt={service.image.alt ?? service.name}
-                    fill
-                    sizes="56px"
-                    className="object-cover"
-                  />
-                </div>
-              )}
 
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{service.name}</p>
-                {formatDuration(service.durationMinutes) && (
-                  <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
-                    <Clock className="size-3" />
-                    {formatDuration(service.durationMinutes)}
-                  </p>
-                )}
-                {remainingLabel(service.remainingSlots) && (
-                  <p className={cn('mt-0.5 text-xs', remainingClass(service.remainingSlots))}>
-                    {remainingLabel(service.remainingSlots)}
-                  </p>
-                )}
-              </div>
-
-              <span
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-lg" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center">
+          <p className="text-destructive mb-2 text-sm">{error}</p>
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            تلاش مجدد
+          </Button>
+        </div>
+      ) : services.length === 0 ? (
+        <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
+          برای این روز هیچ خدمتی با وقت آزاد موجود نیست؛ تاریخ دیگری انتخاب کنید.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {services.map((service) => {
+            const selected = service.id === selectedId
+            return (
+              <button
+                key={service.id}
+                type="button"
+                onClick={() => onSelect(service.id)}
                 className={cn(
-                  'flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors',
-                  selected && 'border-primary bg-primary text-primary-foreground',
+                  'flex w-full items-center gap-3 rounded-lg border p-3 text-start transition-colors',
+                  selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted',
                 )}
               >
-                {selected && <Check className="size-3" />}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+                {service.image?.url && (
+                  <div className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg border">
+                    <Image
+                      src={service.image.url}
+                      alt={service.image.alt ?? service.name}
+                      fill
+                      sizes="56px"
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{service.name}</p>
+                  {formatDuration(service.durationMinutes) && (
+                    <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                      <Clock className="size-3" />
+                      {formatDuration(service.durationMinutes)}
+                    </p>
+                  )}
+                  {remainingLabel(service.remainingSlots) && (
+                    <p className={cn('mt-0.5 text-xs', remainingClass(service.remainingSlots))}>
+                      {remainingLabel(service.remainingSlots)}
+                    </p>
+                  )}
+                </div>
+
+                <span
+                  className={cn(
+                    'flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                    selected && 'border-primary bg-primary text-primary-foreground',
+                  )}
+                >
+                  {selected && <Check className="size-3" />}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -438,80 +561,23 @@ function ServiceStep({
 type SlotOption = { appointmentId: string; time: string }
 
 function TimeStep({
-  barberId,
-  selectedDateKey,
-  selectedServiceId,
+  dateKey,
+  loading,
+  error,
+  onRetry,
+  slots,
   selectedAppointmentId,
   onSelectSlot,
 }: {
-  barberId: string
-  selectedDateKey?: string
-  selectedServiceId?: string
+  dateKey?: string
+  loading?: boolean
+  error?: string | null
+  onRetry?: () => void
+  slots: SlotOption[]
   selectedAppointmentId?: string
   onSelectSlot: (appointmentId: string, time: string) => void
 }) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [slots, setSlots] = useState<SlotOption[]>([])
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    if (!selectedDateKey || !selectedServiceId) return
-    let cancelled = false
-
-    async function load() {
-      setLoading(true)
-      setError(null)
-      try {
-        const date = jalaliKeyToISODate(selectedDateKey!)
-        const res = await fetch(`/api/barbers/${barberId}/appointments?date=${date}`)
-        if (!res.ok) throw new Error('failed')
-        const data = (await res.json()) as {
-          appointments?: {
-            id: string
-            service: string | { id?: string } | null
-            fromDate: string
-            available: boolean
-          }[]
-        }
-
-        const options: SlotOption[] = []
-        const seen = new Set<string>()
-        for (const a of data.appointments ?? []) {
-          if (!a.available) continue
-          const serviceId =
-            typeof a.service === 'object' && a.service !== null
-              ? String(a.service.id ?? '')
-              : a.service != null
-                ? String(a.service)
-                : ''
-          if (serviceId !== selectedServiceId) continue
-
-          const d = new Date(a.fromDate)
-          const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-          if (seen.has(time)) continue
-          seen.add(time)
-          options.push({ time, appointmentId: String(a.id) })
-        }
-        options.sort((a, b) => a.time.localeCompare(b.time))
-        if (!cancelled) setSlots(options)
-      } catch {
-        if (!cancelled) {
-          setError('خطا در دریافت ساعات خالی.')
-          setSlots([])
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    load()
-    return () => {
-      cancelled = true
-    }
-  }, [barberId, selectedDateKey, selectedServiceId, reloadKey])
-
-  if (!selectedDateKey || !selectedServiceId) return null
+  const dateLabel = dateKey ? dateKey.split('/').map(toFaDigits).join('/') : undefined
 
   return (
     <div className="space-y-4">
@@ -519,10 +585,12 @@ function TimeStep({
         <h3 className="text-sm font-semibold">انتخاب ساعت</h3>
         <p className="text-muted-foreground text-xs">ساعت مورد نظر خود را انتخاب کنید</p>
       </div>
-      <p className="text-primary bg-primary/5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium">
-        <CalendarCheck className="size-3.5" />
-        تاریخ انتخابی: {selectedDateKey.split('/').map(toFaDigits).join('/')}
-      </p>
+      {dateLabel && (
+        <p className="text-primary bg-primary/5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium">
+          <CalendarCheck className="size-3.5" />
+          تاریخ انتخابی: {dateLabel}
+        </p>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-3 gap-2">
@@ -533,7 +601,7 @@ function TimeStep({
       ) : error ? (
         <div className="text-center">
           <p className="text-destructive mb-2 text-sm">{error}</p>
-          <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+          <Button variant="outline" size="sm" onClick={onRetry}>
             تلاش مجدد
           </Button>
         </div>
@@ -659,7 +727,7 @@ function SuccessView({
 
       <div className="mt-2 flex w-full flex-col gap-2">
         <Button asChild>
-          <Link href="/appointments" onClick={onNearbyClose}>
+          <Link href="/dashboard" onClick={onNearbyClose}>
             نوبت‌های من
           </Link>
         </Button>

@@ -112,7 +112,7 @@ export function BookingTrigger({
       )}
       {noAvailability && (
         <p className='text-muted-foreground mt-1.5 text-center text-xs'>
-          این آرایشگاه در حال حاضر خدمتی ثبت نکرده یا نوبت آزاد ندارد.
+          این آرایشگاه در حال حاضر نوبت آزاد ندارد.
         </p>
       )}
       {error && <p className='text-destructive mt-1.5 text-center text-xs'>{error}</p>}

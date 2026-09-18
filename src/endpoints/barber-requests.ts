@@ -38,20 +38,6 @@ async function appendBarberCustomer(
   })
 }
 
-async function notify(
-  req: PayloadRequest,
-  userId: string,
-  title: string,
-  body: string,
-): Promise<void> {
-  await req.payload.create({
-    collection: 'notifications',
-    data: { user: userId, type: 'system', title, body },
-    overrideAccess: true,
-    req,
-  })
-}
-
 /**
  * POST /api/barber-requests/send
  * Body: { barberId }. The logged-in customer asks to become the barber's
@@ -129,13 +115,6 @@ export const barberRequestSendEndpoint: PayloadEndpoint = {
       req,
     })
 
-    await notify(
-      req,
-      String(typeof barber.user === 'object' ? barber.user?.id : barber.user),
-      'درخواست مشتری جدید',
-      `${req.user.name || req.user.username} درخواست ثبت‌نام به‌عنوان مشتری شما را دارد.`,
-    )
-
     return Response.json({ status: 'pending' as const })
   },
 }
@@ -185,19 +164,6 @@ export const barberRequestSendEndpoint: PayloadEndpoint = {
   if (decision === 'approved') {
     // Membership drives both booking permission and the «آرایشگر شما» badge.
     await appendBarberCustomer(req, barberId, customerId)
-    await notify(
-      req,
-      customerId,
-      'درخواست شما تایید شد',
-      'حالا می‌توانید نوبت خود را رزرو کنید.',
-    )
-  } else {
-    await notify(
-      req,
-      customerId,
-      'درخواست شما رد شد',
-      'متاسفانه آرایشگر درخواست شما را نپذیرفت.',
-    )
   }
 
   return Response.json({ ok: true, status: decision })

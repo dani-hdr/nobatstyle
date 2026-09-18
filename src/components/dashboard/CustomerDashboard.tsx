@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  BellRing,
   CalendarClock,
   CalendarX2,
   CircleCheck,
@@ -30,7 +29,6 @@ import type {
   CustomerTab,
   DashAppointment,
   DashBarber,
-  DashNotification,
 } from '@/lib/dashboard-types'
 import { faDate, faTime } from '@/lib/dashboard-types'
 
@@ -44,7 +42,6 @@ const TABS: { key: CustomerTab; label: string; icon: LucideIcon }[] = [
   { key: 'past', label: 'گذشته', icon: CircleCheck },
   { key: 'cancelled', label: 'لغو شده', icon: CalendarX2 },
   { key: 'barbers', label: 'آرایشگرهای من', icon: UserCheck },
-  { key: 'notifications', label: 'اعلان‌ها', icon: BellRing },
 ]
 
 export function CustomerDashboard({ userName }: { userName?: string }) {
@@ -83,7 +80,7 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
             {userName ? `سلام، ${userName}` : 'سلام'}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            نوبت‌ها و اعلان‌های خود را از این‌جا مدیریت کنید.
+            نوبت‌های خود را از این‌جا مدیریت کنید.
           </p>
         </div>
         <div className="flex gap-2">
@@ -176,23 +173,6 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {data?.barbers.map((b) => (
                   <BarberCard key={b.id} barber={b} />
-                ))}
-              </div>
-              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="notifications" className="gap-0">
-          {isLoading ? (
-            <ListSkeleton />
-          ) : (data?.notifications.length ?? 0) === 0 ? (
-            <EmptyState text="اعلان جدیدی ندارید." />
-          ) : (
-            <>
-              <div className="space-y-2">
-                {data?.notifications.map((n) => (
-                  <NotificationCard key={n.id} notification={n} />
                 ))}
               </div>
               <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
@@ -339,23 +319,6 @@ function BarberCard({ barber }: { barber: DashBarber }) {
         </div>
       ) : null}
     </Link>
-  )
-}
-
-function NotificationCard({ notification }: { notification: DashNotification }) {
-  return (
-    <Card className="py-0">
-      <CardContent className="px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium">{notification.title || 'اعلان'}</span>
-          {!notification.readAt && <Badge variant="success">جدید</Badge>}
-        </div>
-        {notification.body && (
-          <p className="text-muted-foreground mt-1 text-sm leading-6">{notification.body}</p>
-        )}
-        <span className="text-muted-foreground mt-1 block text-xs">{faDate(notification.createdAt)}</span>
-      </CardContent>
-    </Card>
   )
 }
 

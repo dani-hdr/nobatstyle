@@ -141,18 +141,6 @@ export const barberSubscriptionPurchaseEndpoint: PayloadEndpoint = {
       req,
     })
 
-    await req.payload.create({
-      collection: 'notifications',
-      data: {
-        user: userId,
-        type: 'subscription',
-        title: 'اشتراک شما فعال شد',
-        body: `پلن «${plan.name}» تا ${expiresAt.toLocaleDateString('fa-IR')} فعال است.`,
-      },
-      overrideAccess: true,
-      req,
-    })
-
     const state = await getBarberSubscriptionState(req.payload, barberId)
     return Response.json({ subscriptionId: String(sub.id), state })
   },

@@ -78,7 +78,6 @@ export interface Config {
     comments: Comment;
     conversations: Conversation;
     messages: Message;
-    notifications: Notification;
     subscriptionPlans: SubscriptionPlan;
     subscriptions: Subscription;
     pages: Page;
@@ -104,7 +103,6 @@ export interface Config {
     comments: CommentsSelect<false> | CommentsSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
-    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     subscriptionPlans: SubscriptionPlansSelect<false> | SubscriptionPlansSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
@@ -396,32 +394,6 @@ export interface Message {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "notifications".
- */
-export interface Notification {
-  id: string;
-  user: string | User;
-  type: 'appointment' | 'message' | 'system' | 'subscription';
-  title?: string | null;
-  body?: string | null;
-  readAt?: string | null;
-  /**
-   * داده اضافی ساختاریافته برای هدایت کاربر
-   */
-  data?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscriptionPlans".
  */
 export interface SubscriptionPlan {
@@ -558,10 +530,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'messages';
         value: string | Message;
-      } | null)
-    | ({
-        relationTo: 'notifications';
-        value: string | Notification;
       } | null)
     | ({
         relationTo: 'subscriptionPlans';
@@ -776,20 +744,6 @@ export interface MessagesSelect<T extends boolean = true> {
   sender?: T;
   content?: T;
   readAt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "notifications_select".
- */
-export interface NotificationsSelect<T extends boolean = true> {
-  user?: T;
-  type?: T;
-  title?: T;
-  body?: T;
-  readAt?: T;
-  data?: T;
   updatedAt?: T;
   createdAt?: T;
 }

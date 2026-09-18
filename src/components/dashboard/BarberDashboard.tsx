@@ -2,7 +2,6 @@
 
 import {
   AlertTriangle,
-  BellRing,
   CalendarClock,
   CalendarPlus,
   CalendarX2,
@@ -60,7 +59,6 @@ const TABS: { key: BarberTab; label: string; icon: typeof CalendarClock; countKe
   { key: 'requests', label: 'درخواست‌ها', icon: UserPlus, countKey: 'requests' },
   { key: 'customers', label: 'مشتریان', icon: Users, countKey: 'customers' },
   { key: 'comments', label: 'دیدگاه‌ها', icon: Star, countKey: 'comments' },
-  { key: 'notifications', label: 'اعلان‌ها', icon: BellRing, countKey: 'notifications' },
 ]
 
 export function BarberDashboard({ userName }: { userName?: string }) {
@@ -414,31 +412,6 @@ export function BarberDashboard({ userName }: { userName?: string }) {
                     </Card>
                   )
                 })}
-              </div>
-              <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="notifications" className="gap-0">
-          {isLoading ? (
-            <ListSkeleton />
-          ) : (data?.notifications.length ?? 0) === 0 ? (
-            <EmptyState text="اعلان جدیدی ندارید." />
-          ) : (
-            <>
-              <div className="space-y-2">
-                {data?.notifications.map((n) => (
-                  <Card key={n.id} className="py-0">
-                    <CardContent className="px-4 py-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">{n.title || 'اعلان'}</span>
-                        {!n.readAt && <Badge variant="success">جدید</Badge>}
-                      </div>
-                      {n.body && <p className="text-muted-foreground mt-1 text-sm leading-6">{n.body}</p>}
-                    </CardContent>
-                  </Card>
-                ))}
               </div>
               <Pager page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
             </>

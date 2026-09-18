@@ -13,7 +13,6 @@ import { Container } from './Container'
 import { Logo } from './Logo'
 import { MobileHeader } from './MobileHeader'
 import type { NavItem } from './nav-items'
-import { NotificationBell } from './NotificationBell'
 import { UserMenu } from './UserMenu'
 
 type HeaderImage = { url?: string | null; alt?: string | null } | null
@@ -70,10 +69,7 @@ export function Header({
               }
             />
             {user ? (
-              <>
-                <NotificationBell />
-                <UserMenu viewer={user} />
-              </>
+              <UserMenu viewer={user} />
             ) : (
               <Link href="/login" className="hidden md:block">
                 <Button size="sm" className="h-9 rounded-full px-5">

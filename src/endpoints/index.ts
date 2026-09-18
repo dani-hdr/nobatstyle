@@ -70,7 +70,7 @@ function readTab(req: PayloadRequest, fallback: string, allowed: readonly string
 }
 
 /**
- * GET /api/customer/dashboard?tab=upcoming|past|cancelled|barbers|notifications&page=&limit=
+ * GET /api/customer/dashboard?tab=upcoming|past|cancelled|barbers&page=&limit=
  * Aggregated, ready-to-render data for the customer dashboard. The requested
  * tab's list is paginated server-side; counts for every tab are included so
  * the UI can render badges without extra round-trips.
@@ -81,7 +81,7 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
   handler: async (req) => {
     dashboardAuth(req, [ROLES.CUSTOMER])
     const me = String(req.user!.id)
-    const CUSTOMER_TABS = ['upcoming', 'past', 'cancelled', 'barbers', 'notifications'] as const
+    const CUSTOMER_TABS = ['upcoming', 'past', 'cancelled', 'barbers'] as const
     const tab = readTab(req, 'upcoming', CUSTOMER_TABS)
     const { page, limit } = paginationParams(req)
 
@@ -102,7 +102,7 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
     }
 
     // The selected tab's page + the next-upcoming appointment for the header.
-    const [appointmentsRes, nextRes, barbersRes, notificationsRes] = await Promise.all([
+    const [appointmentsRes, nextRes, barbersRes] = await Promise.all([
       isAppointmentTab
         ? req.payload.find({
             collection: 'appointments',
@@ -137,21 +137,9 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
             req,
           })
         : Promise.resolve(null),
-      tab === 'notifications'
-        ? req.payload.find({
-            collection: 'notifications',
-            depth: 0,
-            where: { user: { equals: me } },
-            sort: '-createdAt',
-            limit,
-            page,
-            overrideAccess: false,
-            req,
-          })
-        : Promise.resolve(null),
     ])
 
-    const [upcomingCount, pastCount, cancelledCount, barbersCount, notificationsCount] =
+    const [upcomingCount, pastCount, cancelledCount, barbersCount] =
       await Promise.all([
         req.payload.count({
           collection: 'appointments',
@@ -177,19 +165,11 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
           overrideAccess: false,
           req,
         }),
-        req.payload.count({
-          collection: 'notifications',
-          where: { user: { equals: me } },
-          overrideAccess: false,
-          req,
-        }),
       ])
 
     const activeTotalDocs = isAppointmentTab
       ? appointmentsRes?.totalDocs ?? 0
-      : tab === 'barbers'
-        ? barbersRes?.totalDocs ?? 0
-        : notificationsRes?.totalDocs ?? 0
+      : barbersRes?.totalDocs ?? 0
 
     const myBarbers =
       tab === 'barbers'
@@ -207,18 +187,16 @@ export const customerDashboardEndpoint: PayloadEndpoint = {
         past: pastCount.totalDocs,
         cancelled: cancelledCount.totalDocs,
         barbers: barbersCount.totalDocs,
-        notifications: notificationsCount.totalDocs,
       },
       nextAppointment: nextRes.docs[0] ?? null,
       appointments: isAppointmentTab ? (appointmentsRes?.docs ?? []) : [],
       barbers: myBarbers,
-      notifications: tab === 'notifications' ? (notificationsRes?.docs ?? []) : [],
     })
   },
 }
 
 /**
- * GET /api/barber/dashboard?tab=all|requests|customers|comments|notifications&page=&limit=&upcomingPage=&upcomingLimit=
+ * GET /api/barber/dashboard?tab=all|requests|customers|comments&page=&limit=&upcomingPage=&upcomingLimit=
  * Aggregated, ready-to-render data (incl. stats) for the barber dashboard.
  * «Upcoming» appointments and the add-slot form live on the page outside the
  * tabs, so upcoming is always returned (paginated). Each tab's list is
@@ -233,7 +211,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
     const barberId = await getBarberIdForUser(req.payload, userId)
     if (!barberId) throw new APIError('Barber profile not found', 404)
 
-    const BARBER_TABS = ['all', 'requests', 'customers', 'comments', 'notifications'] as const
+    const BARBER_TABS = ['all', 'requests', 'customers', 'comments'] as const
     const tab = readTab(req, 'all', BARBER_TABS)
     const { page, limit } = paginationParams(req)
     const upcomingPage = Math.max(
@@ -264,7 +242,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
       String(typeof c === 'object' && c !== null ? c.id : c),
     )
 
-    const [upcomingRes, allRes, requestsRes, commentsRes, notificationsRes, servicesRes] =
+    const [upcomingRes, allRes, requestsRes, commentsRes, servicesRes] =
       await Promise.all([
         // Upcoming appointments — always shown on the page (paginated).
         req.payload.find({
@@ -313,18 +291,6 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
               collection: 'comments',
               depth: 1,
               where: { barber: { equals: barberId }, status: { equals: 'active' } },
-              sort: '-createdAt',
-              limit,
-              page,
-              overrideAccess: false,
-              req,
-            })
-          : Promise.resolve(null),
-        tab === 'notifications'
-          ? req.payload.find({
-              collection: 'notifications',
-              depth: 0,
-              where: { user: { equals: userId } },
               sort: '-createdAt',
               limit,
               page,
@@ -386,7 +352,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
           )
         : []
 
-    const [upcomingCount, allCount, requestsCount, customersCount, commentsCount, notificationsCount, completedCount] =
+    const [upcomingCount, allCount, requestsCount, customersCount, commentsCount, completedCount] =
       await Promise.all([
         req.payload.count({
           collection: 'appointments',
@@ -425,12 +391,6 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
           req,
         }),
         req.payload.count({
-          collection: 'notifications',
-          where: { user: { equals: userId } },
-          overrideAccess: false,
-          req,
-        }),
-        req.payload.count({
           collection: 'appointments',
           where: {
             and: [
@@ -451,9 +411,7 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
           ? customersCount.totalDocs
           : tab === 'comments'
             ? commentsRes?.totalDocs ?? 0
-            : tab === 'notifications'
-              ? notificationsRes?.totalDocs ?? 0
-              : allRes?.totalDocs ?? 0
+            : allRes?.totalDocs ?? 0
 
     return Response.json({
       tab,
@@ -467,7 +425,6 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         requests: requestsCount.totalDocs,
         customers: customersCount.totalDocs,
         comments: commentsCount.totalDocs,
-        notifications: notificationsCount.totalDocs,
       },
       upcoming,
       upcomingPage,
@@ -480,7 +437,6 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
       customerRequests,
       customers,
       comments: tab === 'comments' ? (commentsRes?.docs ?? []) : [],
-      notifications: tab === 'notifications' ? (notificationsRes?.docs ?? []) : [],
       subscription: subscriptionState,
       statistics: {
         completedCount: completedCount.totalDocs,

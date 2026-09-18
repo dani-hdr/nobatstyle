@@ -38,15 +38,6 @@ export type DashAppointment = {
   customerMessage?: string | null
 }
 
-export type DashNotification = {
-  id: string
-  type?: 'appointment' | 'message' | 'system' | 'subscription' | string
-  title?: string | null
-  body?: string | null
-  readAt?: string | null
-  createdAt: string
-}
-
 export type DashComment = {
   id: string
   content: string
@@ -56,7 +47,7 @@ export type DashComment = {
   createdAt: string
 }
 
-export type CustomerTab = 'upcoming' | 'past' | 'cancelled' | 'barbers' | 'notifications'
+export type CustomerTab = 'upcoming' | 'past' | 'cancelled' | 'barbers'
 
 export type CustomerDashboardData = {
   tab: CustomerTab
@@ -69,12 +60,10 @@ export type CustomerDashboardData = {
     past: number
     cancelled: number
     barbers: number
-    notifications: number
   }
   nextAppointment: DashAppointment | null
   appointments: DashAppointment[]
   barbers: DashBarber[]
-  notifications: DashNotification[]
 }
 
 export type DashSubscriptionState = {
@@ -90,7 +79,7 @@ export type DashCustomerRequest = {
   customer: { id: string; name: string | null; username: string | null }
 }
 
-export type BarberTab = 'all' | 'requests' | 'customers' | 'comments' | 'notifications'
+export type BarberTab = 'all' | 'requests' | 'customers' | 'comments'
 
 export type BarberDashboardData = {
   tab: BarberTab
@@ -104,7 +93,6 @@ export type BarberDashboardData = {
     requests: number
     customers: number
     comments: number
-    notifications: number
   }
   /** Upcoming appointments — rendered on the page, outside the tabs. */
   upcoming: DashAppointment[]
@@ -117,7 +105,6 @@ export type BarberDashboardData = {
   customerRequests: DashCustomerRequest[]
   customers: DashUser[]
   comments: DashComment[]
-  notifications: DashNotification[]
   services: DashService[]
   subscription: DashSubscriptionState
   statistics: {

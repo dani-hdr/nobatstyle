@@ -18,7 +18,6 @@ import { BarberRequests } from './collections/BarberRequests'
 import { Comments } from './collections/Comments'
 import { Conversations } from './collections/Conversations'
 import { Messages } from './collections/Messages'
-import { Notifications } from './collections/Notifications'
 import { SubscriptionPlans } from './collections/SubscriptionPlans'
 import { Subscriptions } from './collections/Subscriptions'
 import { Pages } from './collections/Pages'
@@ -64,7 +63,6 @@ export default buildConfig({
     Comments,
     Conversations,
     Messages,
-    Notifications,
     SubscriptionPlans,
     Subscriptions,
     Pages,

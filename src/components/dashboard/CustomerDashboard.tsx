@@ -5,6 +5,7 @@ import {
   CalendarX2,
   CircleCheck,
   Clock,
+  LifeBuoy,
   MapPin,
   MessageCircle,
   Scissors,
@@ -88,6 +89,12 @@ export function CustomerDashboard({ userName }: { userName?: string }) {
             <Link href="/messages">
               <MessageCircle className="size-4" />
               پیام‌ها
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/support">
+              <LifeBuoy className="size-4" />
+              پشتیبانی
             </Link>
           </Button>
           <Button asChild variant="outline">

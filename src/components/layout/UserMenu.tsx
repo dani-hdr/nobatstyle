@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarCheck, LogOut, MessageCircle, ShieldCheck, UserRound } from 'lucide-react'
+import { CalendarCheck, LifeBuoy, LogOut, MessageCircle, ShieldCheck, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -34,6 +34,7 @@ export function viewerMenuItems(viewer: Viewer) {
   if (viewer.role !== 'admin') {
     items.push({ href: '/messages', label: 'پیام‌ها', Icon: MessageCircle })
   }
+  items.push({ href: '/support', label: 'پشتیبانی', Icon: LifeBuoy })
   items.push({ href: '/profile', label: 'پروفایل', Icon: UserRound })
   return items
 }

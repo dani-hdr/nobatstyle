@@ -18,6 +18,7 @@ import { BarberRequests } from './collections/BarberRequests'
 import { Comments } from './collections/Comments'
 import { Conversations } from './collections/Conversations'
 import { Messages } from './collections/Messages'
+import { Tickets } from './collections/Tickets'
 import { SubscriptionPlans } from './collections/SubscriptionPlans'
 import { Subscriptions } from './collections/Subscriptions'
 import { Pages } from './collections/Pages'
@@ -35,6 +36,14 @@ import { profileGetEndpoint, profileUpdateEndpoint, profileAvatarEndpoint } from
 import { requestOtpEndpoint, verifyOtpEndpoint } from './endpoints/otp'
 import { conversationsListEndpoint, conversationCreateEndpoint } from './endpoints/chat'
 import { commentsListEndpoint } from './endpoints/comments'
+import {
+  ticketsListEndpoint,
+  ticketCreateEndpoint,
+  ticketDetailEndpoint,
+  ticketReplyEndpoint,
+  ticketCloseEndpoint,
+  ticketReopenEndpoint,
+} from './endpoints/tickets'
 import {
   barberSubscriptionGetEndpoint,
   barberSubscriptionPurchaseEndpoint,
@@ -62,6 +71,7 @@ export default buildConfig({
     Comments,
     Conversations,
     Messages,
+    Tickets,
     SubscriptionPlans,
     Subscriptions,
     Pages,
@@ -83,6 +93,12 @@ export default buildConfig({
     conversationsListEndpoint,
     conversationCreateEndpoint,
     commentsListEndpoint,
+    ticketsListEndpoint,
+    ticketCreateEndpoint,
+    ticketDetailEndpoint,
+    ticketReplyEndpoint,
+    ticketCloseEndpoint,
+    ticketReopenEndpoint,
     barberSubscriptionGetEndpoint,
     barberSubscriptionPurchaseEndpoint,
   ],

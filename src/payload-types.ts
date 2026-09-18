@@ -78,6 +78,7 @@ export interface Config {
     comments: Comment;
     conversations: Conversation;
     messages: Message;
+    tickets: Ticket;
     subscriptionPlans: SubscriptionPlan;
     subscriptions: Subscription;
     pages: Page;
@@ -103,6 +104,7 @@ export interface Config {
     comments: CommentsSelect<false> | CommentsSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
+    tickets: TicketsSelect<false> | TicketsSelect<true>;
     subscriptionPlans: SubscriptionPlansSelect<false> | SubscriptionPlansSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
@@ -394,6 +396,31 @@ export interface Message {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tickets".
+ */
+export interface Ticket {
+  id: string;
+  subject: string;
+  user: string | User;
+  category: 'general' | 'technical' | 'booking' | 'subscription' | 'payment' | 'other';
+  status: 'open' | 'answered' | 'closed';
+  priority: 'low' | 'normal' | 'high';
+  /**
+   * پیام‌های رد و بدل شده؛ پیام‌های پشتیبانی را با فرستنده «پشتیبانی» ثبت کنید.
+   */
+  messages?:
+    | {
+        from: 'user' | 'staff';
+        body: string;
+        id?: string | null;
+      }[]
+    | null;
+  lastMessageAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscriptionPlans".
  */
 export interface SubscriptionPlan {
@@ -530,6 +557,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'messages';
         value: string | Message;
+      } | null)
+    | ({
+        relationTo: 'tickets';
+        value: string | Ticket;
       } | null)
     | ({
         relationTo: 'subscriptionPlans';
@@ -744,6 +775,27 @@ export interface MessagesSelect<T extends boolean = true> {
   sender?: T;
   content?: T;
   readAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tickets_select".
+ */
+export interface TicketsSelect<T extends boolean = true> {
+  subject?: T;
+  user?: T;
+  category?: T;
+  status?: T;
+  priority?: T;
+  messages?:
+    | T
+    | {
+        from?: T;
+        body?: T;
+        id?: T;
+      };
+  lastMessageAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

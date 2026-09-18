@@ -27,7 +27,6 @@ import { Home } from './globals/Home'
 import { FooterGlobal } from './globals/Footer'
 
 import {
-  settingsPublicEndpoint,
   statusMetaEndpoint,
   customerDashboardEndpoint,
   barberDashboardEndpoint,
@@ -73,7 +72,6 @@ export default buildConfig({
     supportedLanguages: { en, fa },
   },
   endpoints: [
-    settingsPublicEndpoint,
     statusMetaEndpoint,
     customerDashboardEndpoint,
     barberDashboardEndpoint,

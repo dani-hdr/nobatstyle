@@ -7,6 +7,8 @@ export type SiteInfo = {
   siteName: string
   logo: Pick<Media, 'url' | 'alt'> | null
   navLinks: NavItem[]
+  supportPhone: string | null
+  supportEmail: string | null
 }
 
 export type FooterLink = { label: string; href: string }
@@ -90,6 +92,8 @@ export async function getSiteInfo(): Promise<SiteInfo> {
     siteName: settings.general?.siteName || 'نوبت استایل',
     logo,
     navLinks: payloadLinks.length > 0 ? payloadLinks : DEFAULT_NAV_ITEMS,
+    supportPhone: settings.general?.supportPhone?.trim() || null,
+    supportEmail: settings.general?.supportEmail?.trim() || null,
   }
 }
 

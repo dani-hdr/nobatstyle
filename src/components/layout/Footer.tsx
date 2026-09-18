@@ -1,4 +1,4 @@
-import { AtSign, Camera, Globe, MessageCircle, Send, type LucideIcon } from 'lucide-react'
+import { AtSign, Camera, Globe, Mail, MessageCircle, Phone, Send, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 
 import type { FooterColumn, FooterContent, FooterSocial } from '@/lib/site'
@@ -37,9 +37,13 @@ function LinkColumn({ title, links }: FooterColumn) {
 export function Footer({
   siteName = 'نوبت استایل',
   content = DEFAULT_FOOTER,
+  supportPhone,
+  supportEmail,
 }: {
   siteName?: string
   content?: FooterContent
+  supportPhone?: string | null
+  supportEmail?: string | null
 }) {
   const { aboutText, columns, socialLinks, copyright } = content
 
@@ -51,6 +55,32 @@ export function Footer({
             <p className="text-lg font-bold">{siteName}</p>
             {aboutText && (
               <p className="text-muted-foreground mt-3 max-w-xs text-sm leading-6">{aboutText}</p>
+            )}
+            {(supportPhone || supportEmail) && (
+              <ul className="mt-4 flex flex-col gap-2">
+                {supportPhone && (
+                  <li>
+                    <a
+                      href={`tel:${supportPhone}`}
+                      className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm transition-colors"
+                    >
+                      <Phone className="size-4 shrink-0" />
+                      <span dir="ltr">{supportPhone}</span>
+                    </a>
+                  </li>
+                )}
+                {supportEmail && (
+                  <li>
+                    <a
+                      href={`mailto:${supportEmail}`}
+                      className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm transition-colors"
+                    >
+                      <Mail className="size-4 shrink-0" />
+                      <span dir="ltr">{supportEmail}</span>
+                    </a>
+                  </li>
+                )}
+              </ul>
             )}
           </div>
 

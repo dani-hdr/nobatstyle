@@ -56,14 +56,5 @@ export const Home: GlobalConfig = {
         { name: 'description', type: 'textarea', label: 'توضیحات' },
       ],
     },
-    {
-      name: 'popularServices',
-      type: 'relationship',
-      relationTo: 'services',
-      hasMany: true,
-      admin: {
-        description: 'خدمات منتخب جهت نمایش در بخش محبوب',
-      },
-    },
   ],
 }

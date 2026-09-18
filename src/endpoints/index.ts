@@ -5,39 +5,6 @@ import { getBarberSubscriptionState } from '../lib/subscriptions.server'
 import { ROLES } from '../utils/constants'
 import { STATUS_META } from '../utils/constants'
 
-/**
- * Public-safe subset of platform settings for the frontend. Never exposes
- * private/admin-only fields.
- */
-export const settingsPublicEndpoint: PayloadEndpoint = {
-  path: '/settings/public',
-  method: 'get',
-  handler: async (req) => {
-    const settings = await req.payload.findGlobal({
-      slug: 'settings',
-      depth: 0,
-      overrideAccess: true,
-    })
-    const home = await req.payload.findGlobal({
-      slug: 'home',
-      depth: 0,
-      overrideAccess: true,
-    })
-    return Response.json({
-      general: {
-        ...settings.general,
-        logo: settings.general?.logo ?? null,
-      },
-      navigation: settings.navigation ?? { links: [] },
-      auth: {
-        registrationEnabled: settings.auth?.registrationEnabled ?? true,
-        otpEnabled: settings.auth?.otpEnabled ?? false,
-      },
-      hero: home.hero,
-    })
-  },
-}
-
 export const statusMetaEndpoint: PayloadEndpoint = {
   path: '/status-meta',
   method: 'get',

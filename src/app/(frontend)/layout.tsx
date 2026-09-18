@@ -53,7 +53,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             {children}
           </main>
 
-          <Footer siteName={siteInfo.siteName} content={footer} />
+          <Footer
+            siteName={siteInfo.siteName}
+            content={footer}
+            supportPhone={siteInfo.supportPhone}
+            supportEmail={siteInfo.supportEmail}
+          />
 
           <MobileBottomNav />
         </DirectionProvider>

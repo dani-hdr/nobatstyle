@@ -2,8 +2,8 @@ import type { GlobalConfig } from 'payload'
 import { isAdmin } from '../access'
 
 /**
- * Platform-wide configuration. Read is public (admin panel), while a custom
- * /api/settings/public endpoint exposes only the safe subset to the frontend.
+ * Platform-wide configuration. Read is public (admin panel); the frontend reads
+ * the safe subset directly via `getSiteInfo`.
  */
 export const Settings: GlobalConfig = {
   slug: 'settings',
@@ -25,7 +25,6 @@ export const Settings: GlobalConfig = {
         { name: 'logo', type: 'upload', relationTo: 'media', label: 'لوگو', admin: { description: 'لوگوی برند (در هدر و فوتر نمایش داده می‌شود)' } },
         { name: 'supportPhone', type: 'text', label: 'تلفن پشتیبانی' },
         { name: 'supportEmail', type: 'text', label: 'ایمیل پشتیبانی' },
-        { name: 'timezone', type: 'text', defaultValue: 'Asia/Tehran', label: 'منطقه زمانی' },
       ],
     },
     {
@@ -67,15 +66,6 @@ export const Settings: GlobalConfig = {
           label: 'دوره آزمایشی رایگان (روز)',
           admin: { description: 'از لحظه ساخت پروفایل آرایشگر محاسبه می‌شود' },
         },
-      ],
-    },
-    {
-      type: 'group',
-      name: 'auth',
-      label: 'ثبت‌نام و ورود',
-      fields: [
-        { name: 'registrationEnabled', type: 'checkbox', defaultValue: true, label: 'فعال بودن ثبت‌نام' },
-        { name: 'otpEnabled', type: 'checkbox', defaultValue: false, label: 'فعال بودن کد یکبارمصرف' },
       ],
     },
   ],

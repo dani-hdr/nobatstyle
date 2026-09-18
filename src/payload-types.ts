@@ -849,7 +849,6 @@ export interface Setting {
     logo?: (string | null) | Media;
     supportPhone?: string | null;
     supportEmail?: string | null;
-    timezone?: string | null;
   };
   navigation?: {
     /**
@@ -872,10 +871,6 @@ export interface Setting {
      * از لحظه ساخت پروفایل آرایشگر محاسبه می‌شود
      */
     trialDays?: number | null;
-  };
-  auth?: {
-    registrationEnabled?: boolean | null;
-    otpEnabled?: boolean | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -908,10 +903,6 @@ export interface Home {
         id?: string | null;
       }[]
     | null;
-  /**
-   * خدمات منتخب جهت نمایش در بخش محبوب
-   */
-  popularServices?: (string | Service)[] | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -970,7 +961,6 @@ export interface SettingsSelect<T extends boolean = true> {
         logo?: T;
         supportPhone?: T;
         supportEmail?: T;
-        timezone?: T;
       };
   navigation?:
     | T
@@ -988,12 +978,6 @@ export interface SettingsSelect<T extends boolean = true> {
     | {
         enforceSubscription?: T;
         trialDays?: T;
-      };
-  auth?:
-    | T
-    | {
-        registrationEnabled?: T;
-        otpEnabled?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -1027,7 +1011,6 @@ export interface HomeSelect<T extends boolean = true> {
         description?: T;
         id?: T;
       };
-  popularServices?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

@@ -29,12 +29,6 @@ export const settingsPublicEndpoint: PayloadEndpoint = {
         logo: settings.general?.logo ?? null,
       },
       navigation: settings.navigation ?? { links: [] },
-      booking: {
-        slotStepMinutes: settings.booking?.slotStepMinutes ?? 15,
-        cancellationWindowMinutes: settings.booking?.cancellationWindowMinutes ?? 120,
-        maxBookingHorizonDays: settings.booking?.maxBookingHorizonDays ?? 45,
-        defaultStatus: settings.booking?.defaultStatus ?? 'pending',
-      },
       auth: {
         registrationEnabled: settings.auth?.registrationEnabled ?? true,
         otpEnabled: settings.auth?.otpEnabled ?? false,

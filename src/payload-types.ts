@@ -851,21 +851,6 @@ export interface Setting {
     supportEmail?: string | null;
     timezone?: string | null;
   };
-  booking?: {
-    /**
-     * گام زمانی اسلات‌ها (دقیقه)
-     */
-    slotStepMinutes?: number | null;
-    /**
-     * حداقل زمان قبل از شروع رزرو برای لغو بدون جریمه
-     */
-    cancellationWindowMinutes?: number | null;
-    /**
-     * حداکثر فاصله روز برای رزرو
-     */
-    maxBookingHorizonDays?: number | null;
-    defaultStatus?: ('pending' | 'confirmed') | null;
-  };
   navigation?: {
     /**
      * لینک‌های ناوبری هدر (خانه، آرایشگرها و...)
@@ -986,14 +971,6 @@ export interface SettingsSelect<T extends boolean = true> {
         supportPhone?: T;
         supportEmail?: T;
         timezone?: T;
-      };
-  booking?:
-    | T
-    | {
-        slotStepMinutes?: T;
-        cancellationWindowMinutes?: T;
-        maxBookingHorizonDays?: T;
-        defaultStatus?: T;
       };
   navigation?:
     | T

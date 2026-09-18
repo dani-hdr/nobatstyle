@@ -30,45 +30,6 @@ export const Settings: GlobalConfig = {
     },
     {
       type: 'group',
-      name: 'booking',
-      label: 'رزرو',
-      fields: [
-        {
-          name: 'slotStepMinutes',
-          type: 'number',
-          defaultValue: 15,
-          min: 5,
-          label: 'گام زمانی اسلات‌ها',
-          admin: { description: 'گام زمانی اسلات‌ها (دقیقه)' },
-        },
-        {
-          name: 'cancellationWindowMinutes',
-          type: 'number',
-          defaultValue: 120,
-          label: 'مهلت لغو رزرو',
-          admin: { description: 'حداقل زمان قبل از شروع رزرو برای لغو بدون جریمه' },
-        },
-        {
-          name: 'maxBookingHorizonDays',
-          type: 'number',
-          defaultValue: 45,
-          label: 'حداکثر فاصله رزرو',
-          admin: { description: 'حداکثر فاصله روز برای رزرو' },
-        },
-        {
-          name: 'defaultStatus',
-          type: 'select',
-          defaultValue: 'pending',
-          label: 'وضعیت پیش‌فرض رزرو',
-          options: [
-            { label: 'در انتظار تأیید', value: 'pending' },
-            { label: 'تأیید خودکار', value: 'confirmed' },
-          ],
-        },
-      ],
-    },
-    {
-      type: 'group',
       name: 'navigation',
       label: 'ناوبری',
       fields: [

@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Loader2,
   MessageCircle,
+  Phone,
   Scissors,
   Star,
   UserPlus,
@@ -640,6 +641,12 @@ function BarberAppointmentCard({
             <UserRound className="size-3.5" />
             {customer?.name || customer?.username || 'بدون نام'}
           </p>
+          {customer?.name && customer?.username && (
+            <p className="flex items-center gap-1.5">
+              <Phone className="size-3.5" />
+              <span dir="ltr">{customer.username}</span>
+            </p>
+          )}
           {appointment.customerMessage && (
             <p className="bg-muted/60 border-border mt-2 rounded-lg border px-3 py-2 text-xs leading-6">
               <span className="font-medium">پیام مشتری:</span> {appointment.customerMessage}

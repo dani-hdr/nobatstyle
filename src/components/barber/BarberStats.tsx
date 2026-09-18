@@ -27,7 +27,7 @@ export function BarberStats({ stats }: { stats: BarberStat[] }) {
                   <Icon className="size-4.5 md:size-5" />
                 </span>
               )}
-              <p className="text-accent text-xl font-extrabold md:text-2xl">{stat.value}</p>
+              <p className="text-accent text-xl font-extrabold">{stat.value}</p>
               <p className="text-muted  text-xs md:text-sm">{stat.label}</p>
             </CardContent>
           </Card>

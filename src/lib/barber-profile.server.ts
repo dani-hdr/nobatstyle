@@ -8,19 +8,18 @@ import { headers } from 'next/headers'
 import { getPayload, type Payload } from 'payload'
 
 import type {
-  Barber as BarberDoc,
   City,
   Comment as CommentDoc,
   Media,
-  Service as ServiceDoc,
+  Service as ServiceDoc
 } from '@/payload-types'
 
-import { getBarberSubscriptionState, getExpiredBarberIds } from './subscriptions.server'
 import type {
   BarberImage,
   BarberProfile,
   RelatedBarber,
 } from './barber-profile'
+import { getBarberSubscriptionState, getExpiredBarberIds } from './subscriptions.server'
 
 /** Fallback so the hero never renders broken without uploads. */
 const FALLBACK_COVER: BarberImage = { url: '/barber/nobat-cover.svg', alt: '' }

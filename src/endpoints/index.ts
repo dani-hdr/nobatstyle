@@ -351,6 +351,13 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
     // Customer names/docs are resolved explicitly (users are self-read).
     const customers = tab === 'customers' ? await resolveBarberCustomers(req, barberId, page, limit) : []
 
+    // Relationship population respects access control, and barbers cannot read
+    // other users — resolve customer name/phone explicitly for appointment lists.
+    const [upcoming, appointments] = await Promise.all([
+      resolveAppointmentCustomers(req, upcomingRes.docs),
+      tab === 'all' ? resolveAppointmentCustomers(req, allRes?.docs ?? []) : Promise.resolve([]),
+    ])
+
     const customerRequests =
       tab === 'requests'
         ? await Promise.all(
@@ -462,14 +469,14 @@ export const barberDashboardEndpoint: PayloadEndpoint = {
         comments: commentsCount.totalDocs,
         notifications: notificationsCount.totalDocs,
       },
-      upcoming: upcomingRes.docs,
+      upcoming,
       upcomingPage,
       upcomingLimit,
       upcomingTotalPages: Math.max(1, Math.ceil(upcomingRes.totalDocs / upcomingLimit)),
       upcomingTotalDocs: upcomingRes.totalDocs,
       barber,
       services: servicesRes.docs.map((s) => ({ id: String(s.id), name: s.name ?? '' })),
-      appointments: tab === 'all' ? (allRes?.docs ?? []) : [],
+      appointments,
       customerRequests,
       customers,
       comments: tab === 'comments' ? (commentsRes?.docs ?? []) : [],
@@ -560,4 +567,56 @@ async function resolveBarberCustomers(
     }),
   )
   return users.filter((c): c is NonNullable<typeof c> => c !== null)
+}
+
+/**
+ * Replaces each appointment's raw customer id with a display object. Payload's
+ * relationship population honors collection access, and barbers may not read
+ * other users, so customer relationships arrive as bare ids. Resolve the
+ * name/phone explicitly with elevated access (mirrors the requests tab).
+ */
+async function resolveAppointmentCustomers(
+  req: PayloadRequest,
+  docs: { customer?: unknown }[],
+): Promise<unknown[]> {
+  if (docs.length === 0) return docs
+
+  const ids = Array.from(
+    new Set(
+      docs
+        .map((d) => d.customer)
+        .filter((c) => c !== null && c !== undefined)
+        .map((c) => String(typeof c === 'object' ? (c as { id: string }).id : c)),
+    ),
+  )
+  if (ids.length === 0) return docs
+
+  const result = await req.payload.find({
+    collection: 'users',
+    where: { id: { in: ids } },
+    depth: 0,
+    limit: ids.length,
+    pagination: false,
+    overrideAccess: true,
+    req,
+  })
+  const byId = new Map(result.docs.map((u) => [String(u.id), u]))
+
+  return docs.map((doc) => {
+    const cid =
+      doc.customer === null || doc.customer === undefined
+        ? null
+        : String(
+            typeof doc.customer === 'object'
+              ? (doc.customer as { id: string }).id
+              : doc.customer,
+          )
+    const user = cid ? byId.get(cid) : undefined
+    return {
+      ...doc,
+      customer: user
+        ? { id: String(user.id), name: user.name ?? null, username: user.username ?? null }
+        : doc.customer,
+    }
+  })
 }
